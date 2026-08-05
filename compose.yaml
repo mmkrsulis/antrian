@@ -1,0 +1,39 @@
+name: queue-management-live
+
+services:
+  web:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "${QUEUE_BIND_IP:-100.64.131.49}:8090:80"
+      - "${QUEUE_LAN_IP:-192.168.12.68}:8090:80"
+    env_file: .env.live
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  db:
+    image: mariadb:11.4
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: queue_management
+      MARIADB_USER: queue_user
+      MARIADB_PASSWORD: queue_live_password
+      MARIADB_ROOT_PASSWORD: queue_root_live_password
+    volumes:
+      - queue_db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  queue_db_data:

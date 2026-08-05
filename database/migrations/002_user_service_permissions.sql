@@ -1,0 +1,8 @@
+CREATE TABLE IF NOT EXISTS user_services (
+  user_id BIGINT UNSIGNED NOT NULL,
+  service_id BIGINT UNSIGNED NOT NULL,
+  PRIMARY KEY(user_id, service_id),
+  FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY(service_id) REFERENCES services(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+

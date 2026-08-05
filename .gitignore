@@ -1,0 +1,17 @@
+.env
+.env.*
+!.env.example
+storage/logs/*.log
+storage/install.lock
+release/*.zip
+public/uploads/header/*
+!public/uploads/header/.gitkeep
+public/uploads/media/*
+!public/uploads/media/.gitkeep
+!public/uploads/media/playlist/
+public/uploads/media/playlist/*
+!public/uploads/media/playlist/.gitkeep
+public/uploads/notifications/*
+!public/uploads/notifications/.gitkeep
+public/uploads/speech/*
+!public/uploads/speech/.gitkeep

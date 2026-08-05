@@ -1,0 +1,2 @@
+<section class="card narrow"><h1>Masuk</h1><?php if(!empty($error)):?><div class="alert"><?=e($error)?></div><?php endif?><form method="post"><input type="hidden" name="_csrf" value="<?=csrf_token()?>"><label>Username<input name="username" autocomplete="username" required autofocus></label><label>Password<input type="password" name="password" autocomplete="current-password" required></label><button>Masuk</button></form><p><a href="/kiosk">Kembali ke kiosk</a></p></section>
+

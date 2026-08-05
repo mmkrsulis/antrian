@@ -1,0 +1,19 @@
+.operator-config.operator-config-counts {
+  grid-template-columns: minmax(220px,1fr) minmax(260px,1fr) 175px 175px;
+}
+.operator-config-counts > div {
+  padding: 0 14px;
+  gap: 10px;
+}
+.operator-config-counts .waiting-count {
+  background: #ffd976;
+}
+.operator-config-counts > div span {
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: .06em;
+}
+@media (max-width: 1050px) {
+  .operator-config.operator-config-counts { grid-template-columns: 1fr 1fr; }
+  .operator-config-counts > div { min-height: 64px; }
+}

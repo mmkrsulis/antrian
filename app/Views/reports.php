@@ -1,0 +1,2 @@
+<h1>Laporan hari ini</h1><p><a class="button secondary" href="?format=csv">Unduh CSV</a></p><table><thead><tr><th>Layanan</th><th>Total</th><th>Selesai</th><th>Rata-rata</th></tr></thead><tbody><?php foreach($rows as $r):?><tr><td><?=e($r['service_name'])?></td><td><?=e($r['total'])?></td><td><?=e($r['completed'])?></td><td><?=e($r['avg_minutes']??'-')?> menit</td></tr><?php endforeach?></tbody></table>
+

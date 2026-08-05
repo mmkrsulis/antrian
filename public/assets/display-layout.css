@@ -1,0 +1,153 @@
+/* Loaded after app.css so this display geometry always wins the cascade. */
+.display-center.media-mode {
+  display: grid;
+  grid-template-columns: minmax(0, 1.12fr) minmax(0, .88fr);
+  grid-template-rows: auto minmax(112px, 1fr);
+  align-content: stretch;
+  position: relative;
+  overflow: hidden;
+  background: #000;
+}
+
+.display-center.media-mode .display-media.has-media {
+  display: grid;
+  place-items: center;
+  position: relative;
+  inset: auto;
+  z-index: 1;
+  grid-column: 1 / -1;
+  grid-row: 1;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  aspect-ratio: 16 / 9;
+  align-self: start;
+  overflow: hidden;
+  background: #000;
+}
+
+.display-center.media-mode .display-media video,
+.display-center.media-mode .display-media iframe {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  aspect-ratio: 16 / 9;
+  transform: none;
+  object-fit: contain;
+  background: #000;
+}
+
+.display-center.media-mode .completed {
+  display: block;
+  grid-row: 2;
+  grid-column: 2;
+  position: relative;
+  z-index: 2;
+  min-height: 112px;
+  background: #e6e9ec;
+}
+
+.display-center.media-mode .completed {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto auto minmax(0,1fr);
+  gap: 4px 8px;
+  padding: 6px 10px;
+}
+.display-center.media-mode .completed h3 { grid-column: 1; margin: 0; }
+.latest-called {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 12px;
+  border-left: 5px solid var(--brand-accent);
+  background: #fff;
+}
+.latest-called b { color: var(--brand-secondary); font-size: clamp(1.25rem,2vw,2rem); }
+.latest-called span { font-weight: 700; }
+.display-center.media-mode .completed #recent { align-self: stretch; grid-template-columns: repeat(3,minmax(0,1fr)); }
+.display-center.media-mode .completed #recent div { align-items: center; }
+
+.display-center.media-mode .call-label { display: none; }
+.display-center.media-mode.announcing .call-label { display: none; }
+.display-center.media-mode .call-stage {
+  display: grid;
+  position: relative;
+  z-index: 2;
+  grid-column: 1;
+  grid-row: 2;
+  min-width: 0;
+  min-height: 112px;
+  padding: 12px;
+  background: #fff7e9;
+  border-right: 3px solid var(--brand-primary);
+  box-shadow: none;
+}
+.display-center.media-mode .call-stage::before {
+  content: 'NOMOR ANTREAN DIPANGGIL';
+  font-size: .72rem;
+  font-weight: 900;
+  letter-spacing: .12em;
+}
+.display-center.media-mode .call-stage strong {
+  font-size: clamp(2.6rem,5vw,5rem);
+}
+.display-center.media-mode .call-stage p { margin-top: 3px; }
+.display-center.media-mode .call-stage h2 {
+  max-width: 100%;
+  margin: 0;
+  font-size: clamp(1rem,1.7vw,1.7rem);
+  overflow-wrap: anywhere;
+}
+.display-center.media-mode.announcing .call-stage {
+  display: grid;
+  position: relative;
+  left: auto;
+  right: auto;
+  top: auto;
+  bottom: auto;
+  grid-column: 1;
+  grid-row: 2;
+  border-radius: 0;
+  background: #fff0bd;
+  box-shadow: inset 0 0 0 5px var(--brand-accent);
+}
+.display-center.media-mode.announcing .call-stage strong {
+  font-size: clamp(2.6rem,5vw,5rem);
+}
+
+.display-start-button {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  background: rgba(3, 34, 57, .88);
+  color: #fff;
+  font-size: clamp(1.3rem, 3vw, 2.6rem);
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.display-audio-button {
+  position: fixed;
+  right: 18px;
+  bottom: 78px;
+  z-index: 90;
+  padding: 12px 18px;
+  border: 2px solid #fff;
+  border-radius: 10px;
+  background: #0b5f8c;
+  color: #fff;
+  font-weight: 900;
+  box-shadow: 0 8px 28px rgba(0,0,0,.35);
+}
+.display-audio-button.audio-ready { background: #08783e; }
+.display-audio-button.audio-error { background: #c62828; }
+.display-audio-button[hidden] { display: none; }

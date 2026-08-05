@@ -1,0 +1,10 @@
+CREATE TABLE IF NOT EXISTS user_notification_settings (
+  user_id BIGINT UNSIGNED PRIMARY KEY,
+  enabled TINYINT(1) NOT NULL DEFAULT 1,
+  sound_type ENUM('chime','bell','beep','custom') NOT NULL DEFAULT 'chime',
+  sound_url VARCHAR(500) NULL,
+  volume DECIMAL(3,2) NOT NULL DEFAULT 0.80,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
