@@ -1,8 +1,8 @@
 /* Loaded after app.css so this display geometry always wins the cascade. */
 .display-center.media-mode {
   display: grid;
-  grid-template-columns: minmax(0, 1.12fr) minmax(0, .88fr);
-  grid-template-rows: auto minmax(112px, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: minmax(0, 1fr) clamp(100px, 23vh, 180px);
   align-content: stretch;
   position: relative;
   overflow: hidden;
@@ -18,25 +18,32 @@
   grid-column: 1 / -1;
   grid-row: 1;
   width: 100%;
-  height: auto;
+  height: 100%;
   min-height: 0;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: auto;
   align-self: start;
   overflow: hidden;
   background: #000;
+  container-type: size;
 }
 
 .display-center.media-mode .display-media video,
 .display-center.media-mode .display-media iframe {
-  position: relative;
-  inset: auto;
+  position: absolute;
+  left: 50%;
+  top: 50%;
   width: 100%;
   height: 100%;
   max-width: 100%;
-  aspect-ratio: 16 / 9;
-  transform: none;
-  object-fit: contain;
+  aspect-ratio: auto;
+  transform: translate(-50%, -50%);
+  object-fit: cover;
   background: #000;
+}
+.display-center.media-mode .display-media iframe {
+  width: max(100cqw, calc(100cqh * 16 / 9));
+  height: max(100cqh, calc(100cqw * 9 / 16));
+  max-width: none;
 }
 
 .display-center.media-mode .completed {
@@ -46,6 +53,8 @@
   position: relative;
   z-index: 2;
   min-height: 112px;
+  min-width: 0;
+  overflow: hidden;
   background: #e6e9ec;
 }
 
@@ -59,7 +68,8 @@
 .display-center.media-mode .completed h3 { grid-column: 1; margin: 0; }
 .latest-called {
   min-width: 0;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   align-items: center;
   justify-content: space-between;
   gap: 10px;
@@ -67,10 +77,12 @@
   border-left: 5px solid var(--brand-accent);
   background: #fff;
 }
-.latest-called b { color: var(--brand-secondary); font-size: clamp(1.25rem,2vw,2rem); }
-.latest-called span { font-weight: 700; }
+.latest-called b { min-width:0;color:var(--brand-secondary);font-size:clamp(1rem,2vw,2rem);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.latest-called span { min-width:0;font-weight:700;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
 .display-center.media-mode .completed #recent { align-self: stretch; grid-template-columns: repeat(3,minmax(0,1fr)); }
-.display-center.media-mode .completed #recent div { align-items: center; }
+.display-center.media-mode .completed #recent div { min-width:0;align-items:center;gap:4px;padding:4px 6px;overflow:hidden; }
+.display-center.media-mode .completed #recent b,
+.display-center.media-mode .completed #recent span { min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
 
 .display-center.media-mode .call-label { display: none; }
 .display-center.media-mode.announcing .call-label { display: none; }
@@ -82,25 +94,31 @@
   grid-row: 2;
   min-width: 0;
   min-height: 112px;
-  padding: 12px;
+  padding: clamp(5px,1vh,12px);
+  overflow: hidden;
+  container-type: size;
   background: #fff7e9;
   border-right: 3px solid var(--brand-primary);
   box-shadow: none;
 }
 .display-center.media-mode .call-stage::before {
   content: 'NOMOR ANTREAN DIPANGGIL';
-  font-size: .72rem;
+  font-size: clamp(.52rem,1.4cqh,.72rem);
   font-weight: 900;
   letter-spacing: .12em;
 }
 .display-center.media-mode .call-stage strong {
-  font-size: clamp(2.6rem,5vw,5rem);
+  max-width: 100%;
+  font-size: clamp(2.2rem,16cqw,5rem);
+  line-height: .9;
+  white-space: nowrap;
 }
-.display-center.media-mode .call-stage p { margin-top: 3px; }
+.display-center.media-mode .call-stage p { margin:2px 0 0;font-size:clamp(.5rem,1.4cqh,.75rem);white-space:nowrap; }
 .display-center.media-mode .call-stage h2 {
   max-width: 100%;
   margin: 0;
-  font-size: clamp(1rem,1.7vw,1.7rem);
+  font-size: clamp(.8rem,7cqw,1.7rem);
+  line-height: 1;
   overflow-wrap: anywhere;
 }
 .display-center.media-mode.announcing .call-stage {
@@ -117,7 +135,15 @@
   box-shadow: inset 0 0 0 5px var(--brand-accent);
 }
 .display-center.media-mode.announcing .call-stage strong {
-  font-size: clamp(2.6rem,5vw,5rem);
+  font-size: clamp(2.2rem,16cqw,5rem);
+}
+
+@media (max-height: 650px) {
+  .display-v2 { grid-template-rows: clamp(58px,14vh,82px) minmax(0,1fr) clamp(38px,9vh,54px); }
+  .display-center.media-mode { grid-template-rows:minmax(0,1fr) clamp(92px,26vh,150px); }
+  .display-ticker { grid-template-rows:22px minmax(0,1fr); }
+  .display-center.media-mode .completed { min-height:0;padding:4px 7px; }
+  .display-center.media-mode .call-stage { min-height:0; }
 }
 
 .display-start-button {
