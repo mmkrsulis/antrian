@@ -30,6 +30,8 @@ The launcher uses `--window-position=1920,0`. If the primary screen has another 
 
 The launcher starts `RekaThermalPrintAgent.exe`, a windowless local agent that sends compact ESC/POS receipts directly to the Windows default printer. Edge print preview is bypassed completely, and the agent feeds only three trailing lines before issuing the cutter command. Keep the CMD and EXE files in the same folder. The browser print button appears only as a fallback if the local agent is unavailable.
 
+When updating the kiosk package, extract the new ZIP over the old folder and run the new CMD once. The launcher automatically stops an older print-agent process before starting the packaged version, ensuring saved ticket header and footer settings are used.
+
 ## Operator devices
 
 Operators do not require an automatic launcher. Open and bookmark:

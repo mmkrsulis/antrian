@@ -30,7 +30,10 @@ if not exist "%AGENT%" (
 
 echo Server  : %SERVER_URL%
 echo Browser : %BROWSER_KIND% - %BROWSER%
-echo Printer : starting direct thermal print agent...
+echo Printer : replacing any older print agent...
+taskkill /F /IM RekaThermalPrintAgent.exe >nul 2>&1
+timeout /t 1 /nobreak >nul
+echo Printer : starting the current direct thermal print agent...
 start "Reka Thermal Print Agent" /min "%AGENT%"
 
 :wait_server
