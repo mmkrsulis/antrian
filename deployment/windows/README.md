@@ -1,5 +1,9 @@
 # Automatic Windows clients
 
+## Server IP/domain configuration
+
+Edit `reka-queue-config.ini` before copying the package to the kiosk/display PCs. Change only `SERVER_URL` to the address reachable from those devices, without a trailing slash. It accepts LAN, Tailscale, public-IP, and HTTPS domain addresses. `DISPLAY_KEY` and the horizontal `MONITOR_X` position are configurable in the same file. Keep the INI beside the CMD and EXE files.
+
 All client computers must have Tailscale installed, signed in, and configured to start with Windows.
 
 ## Admin PC: display on monitor 2
