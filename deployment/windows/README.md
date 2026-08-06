@@ -4,6 +4,8 @@
 
 Edit `reka-queue-config.ini` before copying the package to the kiosk/display PCs. Change only `SERVER_URL` to the address reachable from those devices, without a trailing slash. It accepts LAN, Tailscale, public-IP, and HTTPS domain addresses. `DISPLAY_KEY` and the horizontal `MONITOR_X` position are configurable in the same file. Keep the INI beside the CMD and EXE files.
 
+The launchers automatically use Microsoft Edge, Google Chrome, or Mozilla Firefox in that order. Edge is not required. Chrome supports the same monitor-position and autoplay flags; Firefox opens in kiosk mode but Windows may choose its monitor position.
+
 All client computers must have Tailscale installed, signed in, and configured to start with Windows.
 
 ## Admin PC: display on monitor 2
