@@ -56,6 +56,11 @@ function setting(string $key, mixed $default = null): mixed {
 }
 
 function app_name(): string { return (string) setting('app_name', env('APP_NAME','Reka Queue Management')); }
+function app_timezone(): string {
+    $timezone=(string)setting('app_timezone',env('APP_TIMEZONE','Asia/Jakarta'));
+    return in_array($timezone,['Asia/Jakarta','Asia/Makassar','Asia/Jayapura','UTC'],true)?$timezone:'Asia/Jakarta';
+}
+date_default_timezone_set(app_timezone());
 function indonesian_date(?int $timestamp = null): string {
     $timestamp ??= time();
     $days = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
