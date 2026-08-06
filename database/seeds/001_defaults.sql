@@ -4,6 +4,8 @@ INSERT IGNORE INTO settings (`key`, `value`) VALUES
 ('display_media_type', 'none'), ('display_media_url', ''), ('display_media_muted', '1'),
 ('header_mode', 'text'), ('header_image_url', ''), ('header_title', 'Reka Queue Management'), ('header_subtitle', 'Sistem Antrean Digital'),
 ('footer_text', 'Mohon menunggu nomor antrean Anda dipanggil'), ('app_name', 'Reka Queue Management'),
+('ticket_header', 'PEMERINTAH KABUPATEN WONOGIRI\nDINAS PENDIDIKAN DAN KEBUDAYAAN'),
+('ticket_footer', 'Mohon menunggu nomor Anda dipanggil.\nTerima kasih.'),
 ('primary_color', '#075f91'), ('secondary_color', '#1478c8'), ('accent_color', '#ffd94f');
 INSERT IGNORE INTO settings (`key`,`value`) VALUES ('header_height_mode','fixed'),('header_height_px','100');
 INSERT IGNORE INTO services (id, name, code, description, color, avg_service_minutes) VALUES

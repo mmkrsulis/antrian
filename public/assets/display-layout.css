@@ -79,7 +79,7 @@
 }
 .latest-called b { min-width:0;color:var(--brand-secondary);font-size:clamp(1rem,2vw,2rem);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
 .latest-called span { min-width:0;font-weight:700;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
-.display-center.media-mode .completed #recent { align-self: stretch; grid-template-columns: repeat(3,minmax(0,1fr)); }
+.display-center.media-mode .completed #recent { align-self: stretch; grid-template-columns: minmax(0,1fr);grid-auto-rows:minmax(0,1fr); }
 .display-center.media-mode .completed #recent div { min-width:0;align-items:center;gap:4px;padding:4px 6px;overflow:hidden; }
 .display-center.media-mode .completed #recent b,
 .display-center.media-mode .completed #recent span { min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
@@ -109,7 +109,7 @@
 }
 .display-center.media-mode .call-stage strong {
   max-width: 100%;
-  font-size: clamp(2.2rem,16cqw,5rem);
+  font-size: clamp(1.8rem,12cqw,4rem);
   line-height: .9;
   white-space: nowrap;
 }
@@ -135,7 +135,7 @@
   box-shadow: inset 0 0 0 5px var(--brand-accent);
 }
 .display-center.media-mode.announcing .call-stage strong {
-  font-size: clamp(2.2rem,16cqw,5rem);
+  font-size: clamp(1.8rem,12cqw,4rem);
 }
 
 @media (max-height: 650px) {
