@@ -6,6 +6,8 @@ Edit `reka-queue-config.ini` before copying the package to the kiosk/display PCs
 
 The launchers automatically use Microsoft Edge, Google Chrome, or Mozilla Firefox in that order. Edge is not required. Chrome supports the same monitor-position and autoplay flags; Firefox opens in kiosk mode but Windows may choose its monitor position.
 
+Always right-click the downloaded ZIP and choose **Extract All** before running a CMD file. Do not run a launcher from inside the ZIP preview. The startup window now shows the selected server, detected browser, printer-agent status, and connection retries for troubleshooting.
+
 All client computers must have Tailscale installed, signed in, and configured to start with Windows.
 
 ## Admin PC: display on monitor 2
