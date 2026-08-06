@@ -17,7 +17,7 @@ Untuk memakai nama lokal `http://antrian.test:8090`, tambahkan baris berikut ke 
 100.64.131.49 antrian.test
 ```
 
-Akun live-test: `admin` / `AdminLive123!`. Ganti password segera. Display tersedia di `http://100.64.131.49:8090/display?key=live-test-display`.
+Akun awal: `admin` / `AdminLive123!`. Ganti password segera. URL display mengikuti nilai `DISPLAY_ACCESS_KEY` pada konfigurasi server.
 
 Stop tanpa menghapus database:
 

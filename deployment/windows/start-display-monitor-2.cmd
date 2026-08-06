@@ -1,6 +1,6 @@
 @echo off
 setlocal
-set "QUEUE_URL=http://100.64.131.49:8090/display?key=live-test-display"
+set "QUEUE_URL=http://100.64.131.49:8090/display?key=reka-display-wonogiri"
 set "EDGE=%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe"
 if not exist "%EDGE%" set "EDGE=%ProgramFiles%\Microsoft\Edge\Application\msedge.exe"
 

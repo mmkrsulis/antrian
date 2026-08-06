@@ -15,5 +15,6 @@ ticket_page="$(curl -fsS "$base_url/ticket/$public_id")"
 printf '%s' "$ticket_page" | grep -q 'Mohon menunggu'
 printf '%s' "$ticket_page" | grep -q "addEventListener('load'"
 if printf '%s' "$ticket_page" | grep -q 'Status:'; then echo 'Ticket status must not be displayed.' >&2; exit 1; fi
-curl -fsS "$base_url/display?key=live-test-display" | grep -q 'NOMOR ANTREAN DIPANGGIL'
+display_key="${DISPLAY_ACCESS_KEY:-reka-display-wonogiri}"
+curl -fsS "$base_url/display?key=$display_key" | grep -q 'NOMOR ANTREAN DIPANGGIL'
 echo "Critical-path smoke test passed."
