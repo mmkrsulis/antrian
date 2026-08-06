@@ -109,7 +109,7 @@
 }
 .display-center.media-mode .call-stage strong {
   max-width: 100%;
-  font-size: clamp(1.8rem,12cqw,4rem);
+  font-size: clamp(1.6rem,9cqw,3.4rem);
   line-height: .9;
   white-space: nowrap;
 }
@@ -135,7 +135,7 @@
   box-shadow: inset 0 0 0 5px var(--brand-accent);
 }
 .display-center.media-mode.announcing .call-stage strong {
-  font-size: clamp(1.8rem,12cqw,4rem);
+  font-size: clamp(1.6rem,9cqw,3.4rem);
 }
 
 @media (max-height: 650px) {
