@@ -3,6 +3,7 @@ declare(strict_types=1);
 require dirname(__DIR__) . '/bootstrap/app.php';
 
 use App\Core\Auth;
+use App\Core\Audit;
 use App\Core\Database;
 use App\Core\View;
 use App\Services\QueueService;
@@ -124,7 +125,8 @@ try {
     }
     if ($path === '/api/admin/display-settings' && $method==='POST') {
         Auth::require(['super_admin','admin']); $csrf($_POST);
-        $mediaType=(string)($_POST['media_type']??'none'); $headerMode=(string)($_POST['header_mode']??'text');
+        if(!array_key_exists('media_type',$_POST)) throw new RuntimeException('Media source is required; existing settings were not changed.');
+        $mediaType=(string)$_POST['media_type']; $headerMode=(string)($_POST['header_mode']??'text');
         if(!in_array($mediaType,['none','local','playlist','youtube','obs'],true)) throw new RuntimeException('Media type is invalid.');
         if(!in_array($headerMode,['text','image'],true)) throw new RuntimeException('Header mode is invalid.');
         $mediaUrl=trim((string)($_POST['media_url']??'')); $headerImageUrl=trim((string)($_POST['header_image_url']??''));
@@ -145,9 +147,13 @@ try {
         if(isset($_FILES['playlist_files']['name'])&&is_array($_FILES['playlist_files']['name'])){foreach($_FILES['playlist_files']['name'] as $i=>$name){$error=$_FILES['playlist_files']['error'][$i]??UPLOAD_ERR_NO_FILE;if($error===UPLOAD_ERR_NO_FILE)continue;if($error!==UPLOAD_ERR_OK)throw new RuntimeException('A playlist video failed to upload.');if(($_FILES['playlist_files']['size'][$i]??0)>512*1024*1024)throw new RuntimeException('A playlist video exceeds 512 MB.');$tmp=$_FILES['playlist_files']['tmp_name'][$i];$mime=(new finfo(FILEINFO_MIME_TYPE))->file($tmp);$formats=['video/mp4'=>'mp4','video/webm'=>'webm','video/ogg'=>'ogv'];if(!isset($formats[$mime]))throw new RuntimeException('Playlist supports MP4, WebM, and OGG only.');$safe=preg_replace('/[^a-zA-Z0-9_-]+/','-',pathinfo((string)$name,PATHINFO_FILENAME));$target=$playlistDir.'/'.trim($safe,'-').'-'.substr(hash_file('sha256',$tmp),0,8).'.'.$formats[$mime];if(!move_uploaded_file($tmp,$target))throw new RuntimeException('Unable to store a playlist video.');}}
         if(in_array($mediaType,['youtube','obs'],true)&&$mediaUrl!==''&&!filter_var($mediaUrl,FILTER_VALIDATE_URL)) throw new RuntimeException('A valid media URL is required.');
         if($mediaType==='local'&&$mediaUrl!==''&&!str_starts_with($mediaUrl,'/')&&!filter_var($mediaUrl,FILTER_VALIDATE_URL)) throw new RuntimeException('Local media path is invalid.');
+        if(in_array($mediaType,['youtube','obs','local'],true)&&$mediaUrl==='') throw new RuntimeException('The selected media source requires a URL or uploaded file; existing settings were not changed.');
+        if($mediaType==='playlist'&&!(glob($playlistDir.'/*.{mp4,webm,ogv}',GLOB_BRACE)?:[])) throw new RuntimeException('Upload at least one playlist video; existing settings were not changed.');
         if($headerImageUrl!==''&&!str_starts_with($headerImageUrl,'/')&&!filter_var($headerImageUrl,FILTER_VALIDATE_URL)) throw new RuntimeException('Header image path is invalid.');
         $values=['display_media_type'=>$mediaType,'display_media_url'=>$mediaUrl,'display_media_muted'=>isset($_POST['media_muted'])?'1':'0'];
-        $stmt=Database::connection()->prepare('INSERT INTO settings (`key`,`value`) VALUES (?,?) ON DUPLICATE KEY UPDATE `value`=VALUES(`value`)'); foreach($values as $key=>$value)$stmt->execute([$key,$value]);
+        $db=Database::connection();$previousStmt=$db->query("SELECT `key`,`value` FROM settings WHERE `key` IN ('display_media_type','display_media_url','display_media_muted')");$previous=array_column($previousStmt->fetchAll(),'value','key');
+        $stmt=$db->prepare('INSERT INTO settings (`key`,`value`) VALUES (?,?) ON DUPLICATE KEY UPDATE `value`=VALUES(`value`)'); foreach($values as $key=>$value)$stmt->execute([$key,$value]);
+        Audit::log('settings.display_media_updated','settings',null,['previous'=>$previous,'current'=>$values]);
         $json(['data'=>$values]);
     }
     if (preg_match('#^/api/operator/tickets/(\d+)/(recall|serve|complete|skip|cancel)$#',$path,$m) && $method==='POST') {
