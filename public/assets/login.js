@@ -1,0 +1,2 @@
+const password=document.querySelector('#login-password'),toggle=document.querySelector('#toggle-login-password');
+toggle?.addEventListener('click',()=>{const visible=password.type==='text';password.type=visible?'password':'text';toggle.textContent=visible?'Lihat':'Sembunyikan';toggle.setAttribute('aria-label',visible?'Tampilkan password':'Sembunyikan password');toggle.setAttribute('aria-pressed',String(!visible));password.focus()});

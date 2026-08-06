@@ -45,10 +45,10 @@ try {
     if (!is_file(dirname(__DIR__).'/storage/install.lock')) $redirect('/install');
 
     if ($path === '/login') {
-        if ($method==='POST') { $csrf($_POST); if(Auth::attempt(trim($_POST['username']??''),(string)($_POST['password']??''))) $redirect('/dashboard'); $error='Username atau password salah.'; }
+        if ($method==='POST') { $csrf($_POST); if(Auth::attempt(trim($_POST['username']??''),(string)($_POST['password']??''),isset($_POST['remember']))) $redirect('/dashboard'); $error='Username atau password salah.'; }
         View::render('login',compact('error')); exit;
     }
-    if ($path === '/logout' && $method==='POST') { $csrf($_POST); $_SESSION=[]; session_destroy(); $redirect('/login'); }
+    if ($path === '/logout' && $method==='POST') { $csrf($_POST); Auth::logout(); $redirect('/login'); }
     if ($path === '/') $redirect('/kiosk');
 
     if ($path === '/kiosk') {
