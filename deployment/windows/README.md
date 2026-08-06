@@ -20,7 +20,7 @@ The launcher uses `--window-position=1920,0`. If the primary screen has another 
 4. Press `Win+R`, enter `shell:startup`, and place a shortcut to the CMD file in that folder.
 5. Restart Windows and issue a test ticket.
 
-The launcher uses a dedicated Edge profile plus `--kiosk-printing`, ensuring an already-open normal Edge window cannot absorb the kiosk session and re-enable print preview. Tickets use a fixed 80 × 75 mm receipt page. Set the printer driver paper width to 80 mm and use continuous/receipt paper.
+The launcher starts `RekaThermalPrintAgent.exe`, a windowless local agent that sends compact ESC/POS receipts directly to the Windows default printer. Edge print preview is bypassed completely, and the agent feeds only three trailing lines before issuing the cutter command. Keep the CMD and EXE files in the same folder. The browser print button appears only as a fallback if the local agent is unavailable.
 
 ## Operator devices
 
