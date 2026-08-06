@@ -17,11 +17,12 @@ $csrf = static function(array $data) use ($json): void { if (!hash_equals(csrf_t
 
 try {
     if ($path === '/health') { try { Database::connection()->query('SELECT 1'); $json(['status'=>'ok']); } catch (Throwable) { $json(['status'=>'starting'],503); } }
-    if ($path === '/downloads/reka-queue-windows-startup.zip' && in_array($method, ['GET','HEAD'], true)) {
-        $file = dirname(__DIR__).'/deployment/reka-queue-windows-startup.zip';
+    $downloadFiles=['/downloads/reka-queue-windows-startup.zip'=>'reka-queue-windows-startup.zip','/downloads/reka-display-startup.zip'=>'reka-display-startup.zip','/downloads/reka-kiosk-printer.zip'=>'reka-kiosk-printer.zip'];
+    if (isset($downloadFiles[$path]) && in_array($method, ['GET','HEAD'], true)) {
+        $downloadName=$downloadFiles[$path];$file=dirname(__DIR__).'/deployment/'.$downloadName;
         if (!is_file($file)) { http_response_code(404); exit('Download tidak ditemukan.'); }
         header('Content-Type: application/zip');
-        header('Content-Disposition: attachment; filename="reka-queue-windows-startup.zip"');
+        header('Content-Disposition: attachment; filename="'.$downloadName.'"');
         header('Content-Length: '.filesize($file));
         header('Cache-Control: no-store');
         if ($method === 'GET') readfile($file);
