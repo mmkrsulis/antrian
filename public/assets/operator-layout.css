@@ -13,6 +13,7 @@
   font-weight: 800;
   letter-spacing: .06em;
 }
+.service-overview{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px;margin:10px 0}.service-overview button{min-width:0;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 11px;background:#fff;color:#173052;border:1px solid #cdd9e8;text-align:left}.service-overview button span{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.service-overview button b{flex:0 0 auto;min-width:28px;padding:2px 7px;border-radius:999px;background:#e5edf7;text-align:center}.service-overview button.has-waiting b{background:#ffd976}.service-overview button.new-ticket{color:#fff;background:#d97706;border-color:#b45309;animation:new-service-pulse 1s ease-in-out infinite alternate}.service-overview button.new-ticket b{color:#8a4000;background:#fff}@keyframes new-service-pulse{to{box-shadow:0 0 0 5px #fbbf2455;transform:translateY(-1px)}}
 @media (max-width: 1050px) {
   .operator-config.operator-config-counts { grid-template-columns: 1fr 1fr; }
   .operator-config-counts > div { min-height: 64px; }
