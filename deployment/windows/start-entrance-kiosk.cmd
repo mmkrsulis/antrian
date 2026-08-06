@@ -11,5 +11,6 @@ if errorlevel 1 (
   goto wait_server
 )
 
-start "Entrance Kiosk" "%EDGE%" --kiosk "%QUEUE_URL%" --edge-kiosk-type=fullscreen --kiosk-printing --no-first-run --disable-session-crashed-bubble
+set "KIOSK_PROFILE=%LOCALAPPDATA%\RekaQueue\KioskProfile"
+start "Entrance Kiosk" "%EDGE%" --user-data-dir="%KIOSK_PROFILE%" --kiosk "%QUEUE_URL%" --edge-kiosk-type=fullscreen --kiosk-printing --disable-print-preview --no-first-run --no-default-browser-check --disable-session-crashed-bubble
 endlocal
