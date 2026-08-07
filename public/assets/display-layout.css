@@ -229,10 +229,22 @@
   font-size: clamp(.9rem, 4.5cqw, 2rem);
 }
 .service-column,.display-service,.display-service>div,.display-service>div span { min-width: 0; }
-.display-service { overflow: hidden; }
-.display-service h3 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.display-service {
+  overflow: hidden;
+  grid-template-rows: clamp(32px, 4vh, 42px) minmax(0, 1fr) clamp(24px, 2.8vh, 30px);
+}
+.display-service h3 {
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  padding: 0 6px;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .display-service>div b { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.display-service footer { flex: 0 0 auto; white-space: nowrap; }
+.display-service footer { min-height:0;align-items:center;flex:0 0 auto;white-space:nowrap;padding-block:0; }
 .display-ticker {
   display: grid;
   grid-template-columns: clamp(130px, 12vw, 210px) minmax(0, 1fr);
@@ -276,4 +288,7 @@
   .display-v2,.display-v2:has(.display-head.image-header) { grid-template-rows: minmax(58px, auto) minmax(0,1fr) 36px; }
   .display-ticker { grid-template-rows:36px; }
   .display-center.media-mode { grid-template-rows:auto minmax(88px,1fr); }
+  .display-service { grid-template-rows:28px minmax(0,1fr) 22px; }
+  .display-service h3 { font-size:clamp(.66rem,1.6vh,.82rem); }
+  .display-service footer { font-size:.58rem; }
 }
