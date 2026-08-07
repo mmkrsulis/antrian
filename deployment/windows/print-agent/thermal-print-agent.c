@@ -12,6 +12,21 @@
 static int json_value(const char *json,const char *key,char *out,size_t cap){char pattern[96],*p;size_t n=0;snprintf(pattern,sizeof(pattern),"\"%s\"",key);p=strstr(json,pattern);if(!p)return 0;p=strchr(p+strlen(pattern),':');if(!p)return 0;while(*++p==' ');if(*p!='\"')return 0;p++;while(*p&&*p!='\"'&&n+1<cap){if(*p=='\\'&&p[1]){p++;if(*p=='n')out[n++]='\n';else if(*p=='r')out[n++]='\r';else if(*p=='t')out[n++]=' ';else if(*p=='u'){for(int i=0;i<4&&p[1];i++)p++;}else out[n++]=*p;p++;continue;}unsigned char c=(unsigned char)*p++;if(c>=32&&c<=126)out[n++]=(char)c;}out[n]=0;return 1;}
 static void add_bytes(unsigned char *buf,size_t *n,const unsigned char *value,size_t length){while(length--&&*n<4095)buf[(*n)++]=*value++;}
 static void add_text(unsigned char *buf,size_t *n,const char *text){while(*text&&*n<4095){unsigned char c=(unsigned char)*text++;if(c=='\n'||(c>=32&&c<=126))buf[(*n)++]=c;}}
+static void add_wrapped_text(unsigned char *buf,size_t *n,const char *text,size_t width){
+    char line[64];size_t line_length=0;
+    while(*text){
+        if(*text=='\r'){text++;continue;}
+        if(*text=='\n'){line[line_length]=0;add_text(buf,n,line);add_text(buf,n,"\n");line_length=0;text++;continue;}
+        while(*text==' ')text++;
+        const char *word=text;size_t word_length=0;while(text[word_length]&&text[word_length]!=' '&&text[word_length]!='\r'&&text[word_length]!='\n')word_length++;size_t consumed=word_length;
+        if(!word_length)continue;
+        if(line_length&&line_length+1+word_length>width){line[line_length]=0;add_text(buf,n,line);add_text(buf,n,"\n");line_length=0;}
+        while(word_length>width){if(line_length){line[line_length]=0;add_text(buf,n,line);add_text(buf,n,"\n");line_length=0;}char chunk[64];memcpy(chunk,word,width);chunk[width]=0;add_text(buf,n,chunk);add_text(buf,n,"\n");word+=width;word_length-=width;}
+        if(line_length)line[line_length++]=' ';
+        memcpy(line+line_length,word,word_length);line_length+=word_length;text+=consumed;
+    }
+    if(line_length){line[line_length]=0;add_text(buf,n,line);add_text(buf,n,"\n");}
+}
 static int raw_print(const unsigned char *data,DWORD length){DWORD needed=0,written=0;HANDLE printer=NULL;DOC_INFO_1A doc={"Reka Queue Ticket",NULL,"RAW"};GetDefaultPrinterA(NULL,&needed);if(!needed)return 0;char *name=(char*)malloc(needed);if(!name||!GetDefaultPrinterA(name,&needed))return 0;if(!OpenPrinterA(name,&printer,NULL)){free(name);return 0;}free(name);int ok=0;if(StartDocPrinterA(printer,1,(LPBYTE)&doc)){if(StartPagePrinter(printer)){ok=WritePrinter(printer,(LPVOID)data,length,&written)&&written==length;EndPagePrinter(printer);}EndDocPrinter(printer);}ClosePrinter(printer);return ok;}
 static int print_ticket(const char *json){
     char header[320]="REKA QUEUE MANAGEMENT",footer[320]="Mohon menunggu nomor Anda dipanggil.",service[160]="LAYANAN",number[64]="---",created[64]="";
@@ -25,7 +40,7 @@ static int print_ticket(const char *json){
     CharUpperBuffA(number,(DWORD)strlen(number));
 
     unsigned char b[4096];size_t n=0;
-    const unsigned char init[]={0x1b,0x40,0x1b,0x61,0x01};
+    const unsigned char init[]={0x1b,0x40,0x1b,0x4d,0x00,0x1b,0x61,0x01};
     const unsigned char boldon[]={0x1b,0x45,0x01};
     const unsigned char boldoff[]={0x1b,0x45,0x00};
     const unsigned char triple[]={0x1d,0x21,0x22};
@@ -34,13 +49,11 @@ static int print_ticket(const char *json){
 
     add_bytes(b,&n,init,sizeof(init));
     add_bytes(b,&n,boldon,sizeof(boldon));
-    add_text(b,&n,header);
-    add_text(b,&n,"\n");
+    add_wrapped_text(b,&n,header,32);
     add_bytes(b,&n,boldoff,sizeof(boldoff));
     add_text(b,&n,"--------------------------------\n");
     add_bytes(b,&n,boldon,sizeof(boldon));
-    add_text(b,&n,service);
-    add_text(b,&n,"\n");
+    add_wrapped_text(b,&n,service,32);
     add_bytes(b,&n,boldoff,sizeof(boldoff));
     add_text(b,&n,created);
     add_text(b,&n,"\nNOMOR ANTREAN\n\n");
@@ -51,8 +64,8 @@ static int print_ticket(const char *json){
     add_bytes(b,&n,normal,sizeof(normal));
     add_bytes(b,&n,boldoff,sizeof(boldoff));
     add_text(b,&n,"\n--------------------------------\n");
-    add_text(b,&n,footer);
-    add_text(b,&n,"\n\n\n\n\n\n");
+    add_wrapped_text(b,&n,footer,32);
+    add_text(b,&n,"\n\n\n\n\n");
     add_bytes(b,&n,cut,sizeof(cut));
     return raw_print(b,(DWORD)n);
 }
