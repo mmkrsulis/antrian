@@ -241,14 +241,25 @@
   background: #bfe9fa;
 }
 .display-ticker>span {
+  position: relative;
+  z-index: 2;
   display: grid;
   place-items: center;
   padding: 0 14px;
   font-size: clamp(.72rem, 1vw, 1rem);
 }
-.display-ticker p {
-  align-self: center;
+.ticker-viewport {
+  position: relative;
+  z-index: 1;
   min-width: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+.display-ticker p {
+  width: max-content;
+  min-width: 100%;
+  align-self: center;
   padding-left: 24px;
   font-size: clamp(.82rem, 1.1vw, 1.08rem);
 }
