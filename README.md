@@ -9,12 +9,12 @@ docker compose up -d --build
 docker compose exec -T web php /var/www/html/bin/install-live.php
 ```
 
-Buka `http://100.64.131.49:8090` dari perangkat yang sudah login ke tailnet yang sama. Port web di-bind hanya ke IP Tailscale server agar tidak ikut terbuka pada interface publik/LAN.
+Buka `http://your_ip:8090` dari perangkat yang sudah login ke tailnet yang sama. Port web di-bind hanya ke IP Tailscale server agar tidak ikut terbuka pada interface publik/LAN.
 
 Untuk memakai nama lokal `http://antrian.test:8090`, tambahkan baris berikut ke hosts komputer yang membuka aplikasi:
 
 ```text
-100.64.131.49 antrian.test
+your_ip: antrian.test
 ```
 
 Akun awal: `admin` / `AdminLive123!`. Ganti password segera. URL display mengikuti nilai `DISPLAY_ACCESS_KEY` pada konfigurasi server.
@@ -38,7 +38,7 @@ Salin `.env.example` menjadi `.env`, isi kredensial MySQL/MariaDB, arahkan docum
 ## Pengujian
 
 ```bash
-BASE_URL=http://100.64.131.49:8090 sh tests/critical_path.sh
+BASE_URL=http://your_ip::8090 sh tests/critical_path.sh
 ```
 
 Lihat [dokumentasi deployment](docs/deployment.md), [arsitektur](docs/architecture.md), [keamanan](docs/security.md), dan [asumsi](docs/assumptions.md).
