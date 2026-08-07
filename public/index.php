@@ -193,10 +193,17 @@ try {
     }
     if ($path === '/admin/downloads') { Auth::require(['super_admin','admin']);View::render('downloads');exit; }
     if ($path === '/reports') {
-        Auth::require(['super_admin','admin']);
-        $rows=Database::connection()->query("SELECT s.name service_name,COUNT(*) total,SUM(t.status='completed') completed,ROUND(AVG(TIMESTAMPDIFF(MINUTE,t.called_at,t.completed_at)),1) avg_minutes FROM tickets t JOIN services s ON s.id=t.service_id WHERE t.queue_date=CURDATE() GROUP BY s.id ORDER BY s.name")->fetchAll();
-        if (($_GET['format']??'')==='csv') { header('Content-Type:text/csv'); header('Content-Disposition:attachment; filename="laporan-antrean.csv"'); $o=fopen('php://output','w'); fputcsv($o,['Layanan','Total','Selesai','Rata-rata Menit']); foreach($rows as $r) fputcsv($o,$r); exit; }
-        View::render('reports',compact('rows')); exit;
+        Auth::require(['super_admin','admin']);$db=Database::connection();
+        $period=(string)($_GET['period']??'daily');if(!in_array($period,['daily','monthly','range'],true))$period='daily';
+        $today=new DateTimeImmutable('today');$selectedDate=(string)($_GET['date']??$today->format('Y-m-d'));$selectedMonth=(string)($_GET['month']??$today->format('Y-m'));$dateFrom=(string)($_GET['from']??$today->format('Y-m-d'));$dateTo=(string)($_GET['to']??$today->format('Y-m-d'));
+        $validDate=static fn(string $value):bool=>(bool)preg_match('/^\d{4}-\d{2}-\d{2}$/',$value)&&DateTimeImmutable::createFromFormat('!Y-m-d',$value)?->format('Y-m-d')===$value;
+        if($period==='daily'){if(!$validDate($selectedDate))$selectedDate=$today->format('Y-m-d');$start=$end=$selectedDate;$periodLabel='Harian · '.(new DateTimeImmutable($start))->format('d/m/Y');}
+        elseif($period==='monthly'){if(!preg_match('/^\d{4}-\d{2}$/',$selectedMonth))$selectedMonth=$today->format('Y-m');$monthDate=DateTimeImmutable::createFromFormat('!Y-m',$selectedMonth)?:$today;$start=$monthDate->format('Y-m-01');$end=$monthDate->format('Y-m-t');$periodLabel='Bulanan · '.$monthDate->format('m/Y');}
+        else{if(!$validDate($dateFrom))$dateFrom=$today->format('Y-m-d');if(!$validDate($dateTo))$dateTo=$today->format('Y-m-d');if($dateFrom>$dateTo)[$dateFrom,$dateTo]=[$dateTo,$dateFrom];$start=$dateFrom;$end=$dateTo;$periodLabel='Periode · '.(new DateTimeImmutable($start))->format('d/m/Y').' – '.(new DateTimeImmutable($end))->format('d/m/Y');}
+        $stmt=$db->prepare("SELECT t.queue_date,s.name service_name,COUNT(*) total,SUM(t.status='waiting') waiting,SUM(t.status IN ('called','serving')) active,SUM(t.status='completed') completed,SUM(t.status='skipped') skipped,SUM(t.status='cancelled') cancelled,ROUND(AVG(CASE WHEN t.called_at IS NOT NULL AND t.completed_at IS NOT NULL THEN TIMESTAMPDIFF(MINUTE,t.called_at,t.completed_at) END),1) avg_minutes FROM tickets t JOIN services s ON s.id=t.service_id WHERE t.queue_date BETWEEN ? AND ? GROUP BY t.queue_date,s.id,s.name ORDER BY t.queue_date DESC,s.name");$stmt->execute([$start,$end]);$rows=$stmt->fetchAll();
+        $summary=['total'=>0,'waiting'=>0,'active'=>0,'completed'=>0,'skipped'=>0,'cancelled'=>0];foreach($rows as $row)foreach(array_keys($summary) as $key)$summary[$key]+=(int)$row[$key];
+        if (($_GET['format']??'')==='csv') { header('Content-Type:text/csv; charset=UTF-8');header('Content-Disposition:attachment; filename="rekap-antrean-'.$start.'-'.$end.'.csv"');$o=fopen('php://output','w');fwrite($o,"\xEF\xBB\xBF");fputcsv($o,['Tanggal','Layanan','Total','Menunggu','Aktif','Selesai','Dilewati','Dibatalkan','Rata-rata layanan (menit)']);foreach($rows as $r)fputcsv($o,[$r['queue_date'],$r['service_name'],$r['total'],$r['waiting'],$r['active'],$r['completed'],$r['skipped'],$r['cancelled'],$r['avg_minutes']??'']);exit;}
+        View::render('reports',compact('rows','summary','period','periodLabel','selectedDate','selectedMonth','dateFrom','dateTo','start','end'));exit;
     }
     http_response_code(404); View::render('404');
 } catch (Throwable $e) {
