@@ -4,6 +4,7 @@ namespace App\Core;
 
 final class Auth
 {
+    private const REMEMBER_DAYS = 365;
     public static function user(): ?array
     {
         if (empty($_SESSION['user_id'])) self::restoreRememberedUser();
@@ -37,7 +38,7 @@ final class Auth
 
     private static function rememberDevice(int $userId): void
     {
-        $selector=bin2hex(random_bytes(12));$validator=bin2hex(random_bytes(32));$expires=time()+30*86400;
+        $selector=bin2hex(random_bytes(12));$validator=bin2hex(random_bytes(32));$expires=time()+self::REMEMBER_DAYS*86400;
         $stmt=Database::connection()->prepare('INSERT INTO remember_tokens(user_id,selector,validator_hash,expires_at,user_agent) VALUES (?,?,?,?,?)');
         $stmt->execute([$userId,$selector,hash('sha256',$validator),date('Y-m-d H:i:s',$expires),substr((string)($_SERVER['HTTP_USER_AGENT']??''),0,255)]);
         self::setRememberCookie($selector.':'.$validator,$expires);
@@ -49,7 +50,7 @@ final class Auth
         $stmt=Database::connection()->prepare('SELECT rt.id,rt.user_id,rt.validator_hash,u.active FROM remember_tokens rt JOIN users u ON u.id=rt.user_id WHERE rt.selector=? AND rt.expires_at>NOW() LIMIT 1');$stmt->execute([$parts[1]]);$token=$stmt->fetch();
         if(!$token||!(bool)$token['active']||!hash_equals($token['validator_hash'],hash('sha256',$parts[2]))){self::forgetDevice();return;}
         session_regenerate_id(true);$_SESSION['user_id']=(int)$token['user_id'];
-        $validator=bin2hex(random_bytes(32));$expires=time()+30*86400;Database::connection()->prepare('UPDATE remember_tokens SET validator_hash=?,expires_at=? WHERE id=?')->execute([hash('sha256',$validator),date('Y-m-d H:i:s',$expires),$token['id']]);self::setRememberCookie($parts[1].':'.$validator,$expires);
+        $validator=bin2hex(random_bytes(32));$expires=time()+self::REMEMBER_DAYS*86400;Database::connection()->prepare('UPDATE remember_tokens SET validator_hash=?,expires_at=? WHERE id=?')->execute([hash('sha256',$validator),date('Y-m-d H:i:s',$expires),$token['id']]);self::setRememberCookie($parts[1].':'.$validator,$expires);
     }
 
     private static function forgetDevice(): void
@@ -66,7 +67,7 @@ final class Auth
     public static function require(array $roles = []): array
     {
         $user = self::user();
-        if (!$user) { header('Location: /login'); exit; }
+        if (!$user) { $client=(string)($_GET['client']??'');header('Location: /login'.($client==='operator'?'?client=operator':'')); exit; }
         if ($roles && !in_array($user['role'], $roles, true)) { http_response_code(403); exit('Akses ditolak'); }
         return $user;
     }
