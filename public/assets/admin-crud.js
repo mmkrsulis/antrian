@@ -1,0 +1,1 @@
+document.querySelectorAll('.delete-form').forEach(form=>form.addEventListener('submit',event=>{if(!confirm(`Hapus ${form.dataset.name}? Tindakan ini tidak dapat dibatalkan.`))event.preventDefault()}));
