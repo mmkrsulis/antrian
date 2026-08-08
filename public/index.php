@@ -17,7 +17,7 @@ $csrf = static function(array $data) use ($json): void { if (!hash_equals(csrf_t
 
 try {
     if ($path === '/health') { try { Database::connection()->query('SELECT 1'); $json(['status'=>'ok']); } catch (Throwable) { $json(['status'=>'starting'],503); } }
-    $downloadFiles=['/downloads/reka-queue-windows-startup.zip'=>'reka-queue-windows-startup.zip','/downloads/reka-display-startup.zip'=>'reka-display-startup.zip','/downloads/reka-kiosk-printer.zip'=>'reka-kiosk-printer.zip','/downloads/reka-operator-client.zip'=>'reka-operator-client.zip','/downloads/reka-display-client.zip'=>'reka-display-client.zip'];
+    $downloadFiles=['/downloads/reka-queue-windows-server.zip'=>'reka-queue-windows-server.zip','/downloads/reka-queue-windows-startup.zip'=>'reka-queue-windows-startup.zip','/downloads/reka-display-startup.zip'=>'reka-display-startup.zip','/downloads/reka-kiosk-printer.zip'=>'reka-kiosk-printer.zip','/downloads/reka-operator-client.zip'=>'reka-operator-client.zip','/downloads/reka-display-client.zip'=>'reka-display-client.zip'];
     if (isset($downloadFiles[$path]) && in_array($method, ['GET','HEAD'], true)) {
         $downloadName=$downloadFiles[$path];$file=dirname(__DIR__).'/deployment/'.$downloadName;
         if (!is_file($file)) { http_response_code(404); exit('Download tidak ditemukan.'); }
