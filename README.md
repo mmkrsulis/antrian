@@ -47,6 +47,7 @@ BASE_URL=http://your_ip::8090 sh tests/critical_path.sh
 - Check-in kode pendaftaran: `/online-check-in`
 - API untuk website PHP/WordPress: [docs/online-registration-api.md](docs/online-registration-api.md)
 - PHP client siap pakai: [integrations/php/RekaQueueClient.php](integrations/php/RekaQueueClient.php)
+- Plugin WordPress siap instal: `deployment/reka-queue-online-wordpress.zip`
 
 Set `ONLINE_API_KEY` dengan nilai acak yang kuat di `.env`. API key hanya digunakan pada server website dan tidak boleh ditempatkan di JavaScript browser.
 

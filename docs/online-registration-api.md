@@ -31,3 +31,7 @@ Check-in request:
 ```
 
 Responses use `{ "data": ... }`; errors use `{ "error": "..." }` with an appropriate HTTP status. API access is limited to 60 requests per client/IP per minute. See `integrations/php/RekaQueueClient.php` for a server-side PHP client.
+
+## WordPress plugin
+
+Install `reka-queue-online-wordpress.zip`, then open **Settings → Reka Queue** and enter the queue server URL plus `ONLINE_API_KEY`. Add `[reka_queue_form]` to a registration page and `[reka_queue_checkin]` to a check-in page. To preselect a service, use `[reka_queue_form service="DAPODIK"]`.
