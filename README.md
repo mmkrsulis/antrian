@@ -41,6 +41,15 @@ Salin `.env.example` menjadi `.env`, isi kredensial MySQL/MariaDB, arahkan docum
 BASE_URL=http://your_ip::8090 sh tests/critical_path.sh
 ```
 
+## Pendaftaran online dan integrasi website
+
+- Formulir pengunjung: `/online-registration`
+- Check-in kode pendaftaran: `/online-check-in`
+- API untuk website PHP/WordPress: [docs/online-registration-api.md](docs/online-registration-api.md)
+- PHP client siap pakai: [integrations/php/RekaQueueClient.php](integrations/php/RekaQueueClient.php)
+
+Set `ONLINE_API_KEY` dengan nilai acak yang kuat di `.env`. API key hanya digunakan pada server website dan tidak boleh ditempatkan di JavaScript browser.
+
 Lihat [dokumentasi deployment](docs/deployment.md), [arsitektur](docs/architecture.md), [keamanan](docs/security.md), dan [asumsi](docs/assumptions.md).
 
 Development progress is tracked in [docs/ROADMAP.md](docs/ROADMAP.md), with executed checks recorded under `docs/verification/`.

@@ -17,6 +17,7 @@ $active=static fn(string $path): string => $currentPath===$path?' active':'';
             <?php if($isAdmin):?>
             <p>MANAJEMEN</p>
             <a class="<?=$active('/admin/services')?>" href="/admin/services"><span>▦</span>Layanan</a>
+            <a class="<?=$active('/admin/registrations')?>" href="/admin/registrations"><span>▤</span>Pendaftaran Online</a>
             <a class="<?=$active('/admin/counters')?>" href="/admin/counters"><span>▥</span>Loket</a>
             <a class="<?=$active('/admin/users')?>" href="/admin/users"><span>♙</span>Pengguna</a>
             <p>SISTEM</p>

@@ -7,6 +7,7 @@ use App\Core\Audit;
 use App\Core\Database;
 use App\Core\View;
 use App\Services\QueueService;
+use App\Services\OnlineRegistrationService;
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
@@ -14,6 +15,13 @@ $json = static function(array $data, int $status=200): never { http_response_cod
 $redirect = static function(string $to): never { header("Location: {$to}"); exit; };
 $input = static function(): array { $raw=json_decode(file_get_contents('php://input'),true); return is_array($raw)?$raw:$_POST; };
 $csrf = static function(array $data) use ($json): void { if (!hash_equals(csrf_token(), (string)($data['_csrf'] ?? ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')))) $json(['error'=>'Token keamanan tidak valid.'],419); };
+$publicApiAuth = static function() use ($json): string {
+    $key=trim((string)($_SERVER['HTTP_X_API_KEY']??''));if($key==='')$json(['error'=>'X-API-Key wajib dikirim.'],401);
+    $configured=(string)env('ONLINE_API_KEY','');$db=Database::connection();$client='env';$valid=$configured!==''&&hash_equals($configured,$key);
+    if(!$valid){$stmt=$db->prepare('SELECT id,name,allowed_origin FROM api_clients WHERE key_hash=? AND active=1');$stmt->execute([hash('sha256',$key)]);$row=$stmt->fetch();if($row){$origin=(string)($_SERVER['HTTP_ORIGIN']??'');if($row['allowed_origin']&&$origin!==''&&!hash_equals((string)$row['allowed_origin'],$origin))$json(['error'=>'Origin tidak diizinkan.'],403);$valid=true;$client='db-'.$row['id'];$db->prepare('UPDATE api_clients SET last_used_at=NOW() WHERE id=?')->execute([$row['id']]);}}
+    if(!$valid)$json(['error'=>'API key tidak valid.'],401);
+    $window=date('Y-m-d H:i:00');$bucket=hash('sha256',$client.'|'.($_SERVER['REMOTE_ADDR']??'unknown'));$db->prepare('INSERT INTO api_rate_limits(client_key,window_start,request_count) VALUES (?,?,1) ON DUPLICATE KEY UPDATE request_count=request_count+1')->execute([$bucket,$window]);$count=$db->prepare('SELECT request_count FROM api_rate_limits WHERE client_key=? AND window_start=?');$count->execute([$bucket,$window]);if((int)$count->fetchColumn()>60)$json(['error'=>'Batas permintaan terlampaui. Coba kembali satu menit lagi.'],429);return $client;
+};
 
 try {
     if ($path === '/health') { try { Database::connection()->query('SELECT 1'); $json(['status'=>'ok']); } catch (Throwable) { $json(['status'=>'starting'],503); } }
@@ -44,6 +52,20 @@ try {
         View::render('install',compact('requirements')); exit;
     }
     if (!is_file(dirname(__DIR__).'/storage/install.lock')) $redirect('/install');
+
+    if ($path==='/api/public/services'&&$method==='GET') {$publicApiAuth();$json(['data'=>(new OnlineRegistrationService)->services()]);}
+    if ($path==='/api/public/availability'&&$method==='GET') {$publicApiAuth();$json(['data'=>(new OnlineRegistrationService)->availability((int)($_GET['service_id']??0),(string)($_GET['date']??''))]);}
+    if ($path==='/api/public/registrations'&&$method==='POST') {$client=$publicApiAuth();$registration=(new OnlineRegistrationService)->register($input(),'api_'.$client);$json(['data'=>$registration],201);}
+    if (preg_match('#^/api/public/registrations/(RQ-[A-Z0-9]{8})$#',$path,$m)&&$method==='GET') {$publicApiAuth();$json(['data'=>(new OnlineRegistrationService)->find($m[1])]);}
+    if ($path==='/api/public/check-in'&&$method==='POST') {$publicApiAuth();$data=$input();$json(['data'=>(new OnlineRegistrationService)->checkIn((string)($data['registration_code']??''))]);}
+
+    if ($path==='/online-registration') {
+        $service=new OnlineRegistrationService;$services=$service->services();$error=null;
+        if($method==='POST'){try{$csrf($_POST);$registration=$service->register($_POST);$redirect('/online-registration/success/'.rawurlencode($registration['registration_code']));}catch(Throwable $e){$error=$e->getMessage();}}
+        View::render('online-registration',compact('services','error'),false);exit;
+    }
+    if(preg_match('#^/online-registration/success/(RQ-[A-Z0-9]{8})$#',$path,$m)){$registration=(new OnlineRegistrationService)->find($m[1]);View::render('online-registration-success',compact('registration'),false);exit;}
+    if($path==='/online-check-in'){$service=new OnlineRegistrationService;$error=null;$registration=null;if($method==='POST'){try{$csrf($_POST);$registration=$service->checkIn((string)($_POST['registration_code']??''));}catch(Throwable $e){$error=$e->getMessage();}}View::render('online-check-in',compact('registration','error'),false);exit;}
 
     if ($path === '/login') {
         $operatorClient=(string)($_POST['client']??$_GET['client']??'')==='operator';
@@ -193,6 +215,9 @@ try {
         $rows=$db->query("SELECT `key`,`value` FROM settings WHERE `key` IN ('app_name','header_mode','header_title','header_subtitle','header_image_url','header_height_mode','header_height_px','primary_color','secondary_color','accent_color','footer_text','ticket_header','ticket_footer','display_media_type','display_media_url','display_media_muted')")->fetchAll();$branding=array_column($rows,'value','key');$playlistFiles=[];foreach(glob(dirname(__DIR__).'/public/uploads/media/playlist/*.{mp4,webm,ogv}',GLOB_BRACE)?:[] as $file)$playlistFiles[]=basename($file);sort($playlistFiles);View::render('settings',compact('branding','playlistFiles'));exit;
     }
     if ($path === '/admin/downloads') { Auth::require(['super_admin','admin']);View::render('downloads');exit; }
+    if ($path === '/admin/registrations') {
+        Auth::require(['super_admin','admin']);$db=Database::connection();$date=(string)($_GET['date']??date('Y-m-d'));if(!preg_match('/^\d{4}-\d{2}-\d{2}$/',$date))$date=date('Y-m-d');$status=(string)($_GET['status']??'');$allowed=['registered','checked_in','cancelled','expired'];$sql="SELECT r.*,s.name service_name,t.ticket_number FROM online_registrations r JOIN services s ON s.id=r.service_id LEFT JOIN tickets t ON t.id=r.ticket_id WHERE r.visit_date=?";$params=[$date];if(in_array($status,$allowed,true)){$sql.=' AND r.status=?';$params[]=$status;}$sql.=' ORDER BY r.created_at DESC LIMIT 500';$stmt=$db->prepare($sql);$stmt->execute($params);$registrations=$stmt->fetchAll();View::render('registrations',compact('registrations','date','status'));exit;
+    }
     if ($path === '/reports') {
         Auth::require(['super_admin','admin']);$db=Database::connection();
         $period=(string)($_GET['period']??'daily');if(!in_array($period,['daily','monthly','range'],true))$period='daily';
