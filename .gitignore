@@ -3,6 +3,8 @@
 !.env.example
 storage/logs/*.log
 storage/install.lock
+storage/sessions/*
+!storage/sessions/.gitkeep
 release/*.zip
 public/uploads/header/*
 !public/uploads/header/.gitkeep

@@ -53,6 +53,8 @@ try {
     }
     if (!is_file(dirname(__DIR__).'/storage/install.lock')) $redirect('/install');
 
+    if ($path==='/api/kiosk/session'&&$method==='GET') {$json(['csrf'=>csrf_token(),'expires_in'=>2592000]);}
+
     if ($path==='/api/public/services'&&$method==='GET') {$publicApiAuth();$json(['data'=>(new OnlineRegistrationService)->services()]);}
     if ($path==='/api/public/availability'&&$method==='GET') {$publicApiAuth();$json(['data'=>(new OnlineRegistrationService)->availability((int)($_GET['service_id']??0),(string)($_GET['date']??''))]);}
     if ($path==='/api/public/registrations'&&$method==='POST') {$client=$publicApiAuth();$registration=(new OnlineRegistrationService)->register($input(),'api_'.$client);$json(['data'=>$registration],201);}

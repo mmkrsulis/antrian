@@ -26,8 +26,14 @@ ini_set('display_errors', (getenv('APP_DEBUG') === 'true') ? '1' : '0');
 ini_set('log_errors', '1');
 ini_set('error_log', dirname(__DIR__) . '/storage/logs/php-error.log');
 
+$sessionLifetime=60*60*24*30;
+ini_set('session.gc_maxlifetime',(string)$sessionLifetime);
+$sessionPath=dirname(__DIR__).'/storage/sessions';
+if(!is_dir($sessionPath))mkdir($sessionPath,0775,true);
+session_save_path($sessionPath);
 session_name('queue_session');
 session_set_cookie_params([
+    'lifetime' => $sessionLifetime,
     'httponly' => true,
     'secure' => getenv('SESSION_SECURE') === 'true',
     'samesite' => 'Lax',
