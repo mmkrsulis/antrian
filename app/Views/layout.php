@@ -4,7 +4,7 @@ $layoutUser=\App\Core\Auth::user();
 $isAdmin=$layoutUser&&in_array($layoutUser['role'],['super_admin','admin'],true);
 $active=static fn(string $path): string => $currentPath===$path?' active':'';
 ?>
-<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?=e(app_name())?></title><link rel="stylesheet" href="/assets/app.css?v=<?=e((string)filemtime(__DIR__.'/../../public/assets/app.css'))?>"><link rel="stylesheet" href="/assets/creator-credit.css?v=<?=e((string)filemtime(__DIR__.'/../../public/assets/creator-credit.css'))?>"><link rel="stylesheet" href="/assets/admin-shell.css?v=<?=e((string)filemtime(__DIR__.'/../../public/assets/admin-shell.css'))?>"><style><?=theme_css_vars()?></style></head><body class="admin-shell">
+<!doctype html><html lang="id" translate="no" class="notranslate"><head><meta charset="utf-8"><meta name="google" content="notranslate"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?=e(app_name())?></title><link rel="stylesheet" href="/assets/app.css?v=<?=e((string)filemtime(__DIR__.'/../../public/assets/app.css'))?>"><link rel="stylesheet" href="/assets/creator-credit.css?v=<?=e((string)filemtime(__DIR__.'/../../public/assets/creator-credit.css'))?>"><link rel="stylesheet" href="/assets/admin-shell.css?v=<?=e((string)filemtime(__DIR__.'/../../public/assets/admin-shell.css'))?>"><style><?=theme_css_vars()?></style></head><body class="admin-shell">
 <?php if($layoutUser):?>
 <div class="admin-layout">
     <aside class="admin-sidebar">
