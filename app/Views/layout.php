@@ -7,7 +7,8 @@ $active=static fn(string $path): string => $currentPath===$path?' active':'';
 <!doctype html><html lang="id" translate="no" class="notranslate"><head><meta charset="utf-8"><meta name="google" content="notranslate"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?=e(app_name())?></title><link rel="stylesheet" href="/assets/app.css?v=<?=e((string)filemtime(__DIR__.'/../../public/assets/app.css'))?>"><link rel="stylesheet" href="/assets/creator-credit.css?v=<?=e((string)filemtime(__DIR__.'/../../public/assets/creator-credit.css'))?>"><link rel="stylesheet" href="/assets/admin-shell.css?v=<?=e((string)filemtime(__DIR__.'/../../public/assets/admin-shell.css'))?>"><style><?=theme_css_vars()?></style></head><body class="admin-shell">
 <?php if($layoutUser):?>
 <div class="admin-layout">
-    <aside class="admin-sidebar">
+    <button class="admin-menu-toggle" type="button" aria-label="Buka menu" aria-expanded="false"><span></span><span></span><span></span></button><div class="admin-sidebar-backdrop"></div>
+    <aside class="admin-sidebar" id="admin-sidebar">
         <a href="/dashboard" class="admin-sidebar-brand"><span>RQ</span><div><b><?=e(setting('header_title',app_name()))?></b><small><?=e(setting('header_subtitle','Sistem Antrean Digital'))?></small></div></a>
         <nav class="admin-sidebar-nav">
             <p>UTAMA</p>
@@ -31,5 +32,6 @@ $active=static fn(string $path): string => $currentPath===$path?' active':'';
     </aside>
     <div class="admin-workspace"><main class="container admin-content"><?=$content?></main><footer class="creator-credit">Created by Sulis Setiyawan — rekakarsa</footer></div>
 </div>
+<script>document.addEventListener('DOMContentLoaded',()=>{const body=document.body,toggle=document.querySelector('.admin-menu-toggle'),backdrop=document.querySelector('.admin-sidebar-backdrop'),sidebar=document.querySelector('.admin-sidebar');if(!toggle)return;const close=()=>{body.classList.remove('admin-menu-open');toggle.setAttribute('aria-expanded','false')};toggle.addEventListener('click',()=>{const open=body.classList.toggle('admin-menu-open');toggle.setAttribute('aria-expanded',String(open))});backdrop.addEventListener('click',close);sidebar.querySelectorAll('a').forEach(link=>link.addEventListener('click',close));addEventListener('keydown',event=>{if(event.key==='Escape')close()})});</script>
 <?php else:?><main class="container"><?=$content?></main><footer class="creator-credit">Created by Sulis Setiyawan — rekakarsa</footer><?php endif?>
 </body></html>
