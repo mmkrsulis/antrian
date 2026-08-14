@@ -18,3 +18,5 @@ public/uploads/notifications/*
 public/uploads/speech/*
 !public/uploads/speech/.gitkeep
 deployment/windows/notifier/*.o
+deployment/android/notifier/reka-release.keystore
+deployment/android/notifier/build/

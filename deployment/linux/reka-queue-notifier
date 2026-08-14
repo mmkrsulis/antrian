@@ -1,0 +1,78 @@
+#!/usr/bin/env python3
+import argparse, getpass, json, os, platform, subprocess, sys, time, urllib.parse, urllib.request, urllib.error, uuid
+
+APP = "Reka Queue Notifier"
+CONFIG_DIR = os.path.join(os.path.expanduser("~"), ".config", "reka-queue-notifier")
+CONFIG_FILE = os.path.join(CONFIG_DIR, "config.json")
+
+def load():
+    try:
+        with open(CONFIG_FILE, encoding="utf-8") as f: return json.load(f)
+    except (OSError, ValueError): return {}
+
+def save(data):
+    os.makedirs(CONFIG_DIR, mode=0o700, exist_ok=True)
+    tmp = CONFIG_FILE + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f: json.dump(data, f, indent=2)
+    os.chmod(tmp, 0o600); os.replace(tmp, CONFIG_FILE)
+
+def request(url, data=None, token=None):
+    body = urllib.parse.urlencode(data).encode() if data else None
+    headers = {"Accept":"application/json", "User-Agent":"RekaQueueNotifier-Linux/1.0"}
+    if body: headers["Content-Type"] = "application/x-www-form-urlencoded"
+    if token: headers["X-Device-Token"] = token
+    with urllib.request.urlopen(urllib.request.Request(url, body, headers), timeout=15) as r:
+        return json.loads(r.read().decode("utf-8"))
+
+def setup():
+    old = load()
+    print("\nReka Queue Notifier — Linux setup\n")
+    server = input("Server URL [%s]: " % old.get("server", "http://192.168.12.68:8090")).strip() or old.get("server", "http://192.168.12.68:8090")
+    server = server.rstrip("/")
+    username = input("Operator username: ").strip()
+    password = getpass.getpass("Password (not stored): ")
+    device = str(uuid.uuid5(uuid.NAMESPACE_DNS, platform.node()+"-reka-linux"))
+    try:
+        result = request(server+"/api/client/notifications/register", {"username":username,"password":password,"device_id":device,"device_name":platform.node()+" (Linux)"})["data"]
+    except Exception as exc:
+        print("Connection failed:", exc, file=sys.stderr); return 1
+    save({"server":server,"username":username,"token":result["token"],"cursor":result.get("cursor",0)})
+    subprocess.run(["systemctl","--user","daemon-reload"], check=False)
+    subprocess.run(["systemctl","--user","enable","--now","reka-queue-notifier.service"], check=False)
+    print("\nConnected as %s. Notifications are now active." % result.get("operator", username)); return 0
+
+def notify(ticket):
+    title = "Antrean baru · %s" % ticket.get("service_name", "Layanan")
+    message = "%s mengambil nomor %s" % (ticket.get("service_name", "Pengunjung"), ticket.get("ticket_number", "-"))
+    subprocess.run(["notify-send","--app-name",APP,"--icon","dialog-information",title,message], check=False)
+    subprocess.run(["canberra-gtk-play","-i","message-new-instant"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+
+def run():
+    cfg = load()
+    if not cfg.get("token"):
+        print("Not configured. Run: reka-queue-notifier --setup", file=sys.stderr); return 2
+    failures = 0
+    while True:
+        try:
+            payload = request(cfg["server"]+"/api/client/notifications?after="+str(cfg.get("cursor",0)), token=cfg["token"])
+            for ticket in payload.get("tickets", []): notify(ticket)
+            cfg["cursor"] = payload.get("cursor", cfg.get("cursor",0)); save(cfg); failures = 0
+            time.sleep(4)
+        except urllib.error.HTTPError as exc:
+            if exc.code == 401:
+                subprocess.run(["notify-send",APP,"Device session expired. Run setup again."], check=False); return 3
+            failures += 1; time.sleep(min(60, 3 * failures))
+        except Exception:
+            failures += 1; time.sleep(min(60, 3 * failures))
+
+def main():
+    parser=argparse.ArgumentParser(description="Native Linux notifications for Reka Queue Management")
+    parser.add_argument("--setup", action="store_true", help="connect this device to an operator account")
+    parser.add_argument("--status", action="store_true", help="show current configuration and service status")
+    args=parser.parse_args()
+    if args.setup: return setup()
+    if args.status:
+        cfg=load(); print("Server:",cfg.get("server","not configured")); print("Operator:",cfg.get("username","-")); subprocess.run(["systemctl","--user","status","reka-queue-notifier.service","--no-pager"],check=False); return 0
+    return run()
+
+if __name__ == "__main__": raise SystemExit(main())

@@ -1,0 +1,12 @@
+[Unit]
+Description=Reka Queue Operator Notifications
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/bin/reka-queue-notifier
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

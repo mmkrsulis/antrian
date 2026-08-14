@@ -1,0 +1,1 @@
+package site.rekadev.rekaqueue.notifier;import android.content.*;public class BootReceiver extends BroadcastReceiver{public void onReceive(Context c,Intent i){if(c.getSharedPreferences("reka",Context.MODE_PRIVATE).contains("token"))QueueService.start(c);}}
