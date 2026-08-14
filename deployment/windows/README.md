@@ -40,6 +40,11 @@ Operators do not require an automatic launcher. Open and bookmark:
 
 Each operator signs in with their own account and sees only assigned services and counters.
 
+For native notifications without an open browser, download **Windows Notification Client**
+from the admin Download Client page. Configure the server URL and operator credentials once
+in `reka-notifier.ini`, then run `RekaQueueNotifier.exe`. Its device token is stored in Windows
+Credential Manager, the password is erased from the INI, and the notifier starts automatically.
+
 ## Exit fullscreen during maintenance
 
 Press `Alt+F4`. The launchers run only at Windows sign-in; they do not prevent an administrator from closing the browser.

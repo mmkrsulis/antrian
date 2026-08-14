@@ -22,10 +22,18 @@ $publicApiAuth = static function() use ($json): string {
     if(!$valid)$json(['error'=>'API key tidak valid.'],401);
     $window=date('Y-m-d H:i:00');$bucket=hash('sha256',$client.'|'.($_SERVER['REMOTE_ADDR']??'unknown'));$db->prepare('INSERT INTO api_rate_limits(client_key,window_start,request_count) VALUES (?,?,1) ON DUPLICATE KEY UPDATE request_count=request_count+1')->execute([$bucket,$window]);$count=$db->prepare('SELECT request_count FROM api_rate_limits WHERE client_key=? AND window_start=?');$count->execute([$bucket,$window]);if((int)$count->fetchColumn()>60)$json(['error'=>'Batas permintaan terlampaui. Coba kembali satu menit lagi.'],429);return $client;
 };
+$notificationDeviceAuth = static function() use ($json): array {
+    $authorization=(string)($_SERVER['HTTP_AUTHORIZATION']??$_SERVER['REDIRECT_HTTP_AUTHORIZATION']??'');$deviceToken=trim((string)($_SERVER['HTTP_X_DEVICE_TOKEN']??''));
+    if($deviceToken===''&&preg_match('/^Bearer\s+([a-f0-9]{64})$/i',$authorization,$match))$deviceToken=$match[1];
+    if(!preg_match('/^[a-f0-9]{64}$/i',$deviceToken))$json(['error'=>'Token perangkat wajib dikirim.'],401);
+    $db=Database::connection();$stmt=$db->prepare('SELECT nd.id device_id,u.id user_id,u.name,u.role FROM notification_devices nd JOIN users u ON u.id=nd.user_id WHERE nd.token_hash=? AND nd.expires_at>NOW() AND u.active=1 LIMIT 1');$stmt->execute([hash('sha256',strtolower($deviceToken))]);$device=$stmt->fetch();
+    if(!$device)$json(['error'=>'Token perangkat tidak valid atau sudah kedaluwarsa.'],401);
+    $db->prepare('UPDATE notification_devices SET last_used_at=NOW() WHERE id=?')->execute([$device['device_id']]);return $device;
+};
 
 try {
     if ($path === '/health') { try { Database::connection()->query('SELECT 1'); $json(['status'=>'ok']); } catch (Throwable) { $json(['status'=>'starting'],503); } }
-    $downloadFiles=['/downloads/reka-queue-windows-server.zip'=>'reka-queue-windows-server.zip','/downloads/reka-queue-windows-startup.zip'=>'reka-queue-windows-startup.zip','/downloads/reka-display-startup.zip'=>'reka-display-startup.zip','/downloads/reka-kiosk-printer.zip'=>'reka-kiosk-printer.zip','/downloads/reka-operator-client.zip'=>'reka-operator-client.zip','/downloads/reka-display-client.zip'=>'reka-display-client.zip','/downloads/reka-queue-online-wordpress.zip'=>'reka-queue-online-wordpress.zip'];
+    $downloadFiles=['/downloads/reka-queue-windows-server.zip'=>'reka-queue-windows-server.zip','/downloads/reka-queue-windows-startup.zip'=>'reka-queue-windows-startup.zip','/downloads/reka-display-startup.zip'=>'reka-display-startup.zip','/downloads/reka-kiosk-printer.zip'=>'reka-kiosk-printer.zip','/downloads/reka-operator-client.zip'=>'reka-operator-client.zip','/downloads/reka-windows-notifier.zip'=>'reka-windows-notifier.zip','/downloads/reka-display-client.zip'=>'reka-display-client.zip','/downloads/reka-queue-online-wordpress.zip'=>'reka-queue-online-wordpress.zip'];
     if (isset($downloadFiles[$path]) && in_array($method, ['GET','HEAD'], true)) {
         $downloadName=$downloadFiles[$path];$file=dirname(__DIR__).'/deployment/'.$downloadName;
         if (!is_file($file)) { http_response_code(404); exit('Download tidak ditemukan.'); }
@@ -52,6 +60,20 @@ try {
         View::render('install',compact('requirements')); exit;
     }
     if (!is_file(dirname(__DIR__).'/storage/install.lock')) $redirect('/install');
+
+    if($path==='/api/client/notifications/register'&&$method==='POST'){
+        $data=$input();$username=trim((string)($data['username']??''));$password=(string)($data['password']??'');$deviceId=substr(preg_replace('/[^a-zA-Z0-9._-]/','',(string)($data['device_id']??'')),0,100);$deviceName=substr(trim((string)($data['device_name']??'Windows Operator')),0,150);
+        if($username===''||$password===''||$deviceId==='')$json(['error'=>'Username, password, dan ID perangkat wajib diisi.'],422);
+        $db=Database::connection();$stmt=$db->prepare("SELECT id,name,password_hash FROM users WHERE username=? AND active=1 AND role IN ('super_admin','admin','operator') LIMIT 1");$stmt->execute([$username]);$user=$stmt->fetch();if(!$user||!password_verify($password,$user['password_hash'])){usleep(500000);$json(['error'=>'Username atau password salah.'],401);}
+        $token=bin2hex(random_bytes(32));$expires=date('Y-m-d H:i:s',time()+365*86400);$save=$db->prepare('INSERT INTO notification_devices(user_id,device_id,device_name,token_hash,expires_at,last_used_at) VALUES (?,?,?,?,?,NOW()) ON DUPLICATE KEY UPDATE device_name=VALUES(device_name),token_hash=VALUES(token_hash),expires_at=VALUES(expires_at),last_used_at=NOW()');$save->execute([$user['id'],$deviceId,$deviceName,hash('sha256',$token),$expires]);$cursor=(int)$db->query('SELECT COALESCE(MAX(id),0) FROM queue_events')->fetchColumn();
+        $json(['data'=>['token'=>$token,'cursor'=>$cursor,'operator'=>$user['name'],'expires_at'=>$expires]]);
+    }
+    if($path==='/api/client/notifications'&&$method==='GET'){
+        $device=$notificationDeviceAuth();$after=max(0,(int)($_GET['after']??0));$db=Database::connection();$cursor=(int)$db->query('SELECT COALESCE(MAX(id),0) FROM queue_events')->fetchColumn();
+        if($device['role']==='operator'){$stmt=$db->prepare("SELECT e.id,t.id ticket_id,t.ticket_number,t.service_id,s.name service_name,t.status FROM queue_events e JOIN tickets t ON t.id=e.ticket_id JOIN services s ON s.id=t.service_id JOIN user_services us ON us.service_id=t.service_id AND us.user_id=? WHERE e.id>? AND e.event_type='issued' AND t.queue_date=CURDATE() ORDER BY e.id LIMIT 50");$stmt->execute([$device['user_id'],$after]);$counts=$db->prepare("SELECT t.service_id,s.name service_name,COUNT(*) waiting FROM tickets t JOIN services s ON s.id=t.service_id JOIN user_services us ON us.service_id=t.service_id AND us.user_id=? WHERE t.queue_date=CURDATE() AND t.status IN ('waiting','skipped') GROUP BY t.service_id,s.name ORDER BY s.name");$counts->execute([$device['user_id']]);}
+        else{$stmt=$db->prepare("SELECT e.id,t.id ticket_id,t.ticket_number,t.service_id,s.name service_name,t.status FROM queue_events e JOIN tickets t ON t.id=e.ticket_id JOIN services s ON s.id=t.service_id WHERE e.id>? AND e.event_type='issued' AND t.queue_date=CURDATE() ORDER BY e.id LIMIT 50");$stmt->execute([$after]);$counts=$db->query("SELECT t.service_id,s.name service_name,COUNT(*) waiting FROM tickets t JOIN services s ON s.id=t.service_id WHERE t.queue_date=CURDATE() AND t.status IN ('waiting','skipped') GROUP BY t.service_id,s.name ORDER BY s.name");}
+        $settingsStmt=$db->prepare('SELECT enabled,sound_type,sound_url,volume,play_mode FROM user_notification_settings WHERE user_id=?');$settingsStmt->execute([$device['user_id']]);$settings=$settingsStmt->fetch()?:['enabled'=>1,'sound_type'=>'chime','sound_url'=>'','volume'=>'0.80','play_mode'=>'auto'];$json(['cursor'=>$cursor,'tickets'=>$stmt->fetchAll(),'waiting_counts'=>$counts->fetchAll(),'settings'=>$settings]);
+    }
 
     if ($path==='/api/kiosk/session'&&$method==='GET') {$json(['csrf'=>csrf_token(),'expires_in'=>2592000]);}
 
