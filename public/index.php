@@ -133,6 +133,10 @@ try {
         $notificationStmt=$db->prepare('SELECT enabled,sound_type,sound_url,volume FROM user_notification_settings WHERE user_id=?');$notificationStmt->execute([$user['id']]);$notificationSettings=$notificationStmt->fetch()?:['enabled'=>1,'sound_type'=>'chime','sound_url'=>'','volume'=>'0.80'];$notificationCursor=(int)$db->query('SELECT COALESCE(MAX(id),0) FROM tickets')->fetchColumn();
         View::render('operator',compact('user','counters','services','current','waitingCounts','notificationSettings','notificationCursor'),false); exit;
     }
+    if ($path === '/operator/notifications') {
+        $user=Auth::require(['super_admin','admin','operator']);$stmt=Database::connection()->prepare('SELECT enabled,sound_type,sound_url,volume FROM user_notification_settings WHERE user_id=?');$stmt->execute([$user['id']]);$notificationSettings=$stmt->fetch()?:['enabled'=>1,'sound_type'=>'chime','sound_url'=>'','volume'=>'0.80'];View::render('operator-notifications',compact('user','notificationSettings'),false);exit;
+    }
+    if ($path === '/api/operator/session' && $method==='GET') {$user=Auth::user();if(!$user)$json(['error'=>'Sesi operator berakhir. Silakan masuk kembali.'],401);$json(['authenticated'=>true,'csrf'=>csrf_token(),'expires_in'=>2592000]);}
     if ($path === '/api/operator/next' && $method==='POST') {
         $user=Auth::require(['super_admin','admin','operator']); $data=$input(); $csrf($data);
         $ticket=(new QueueService)->callNext((int)$data['counter_id'],(int)$data['service_id'],(int)$user['id']);

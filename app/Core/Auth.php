@@ -50,7 +50,9 @@ final class Auth
         $stmt=Database::connection()->prepare('SELECT rt.id,rt.user_id,rt.validator_hash,u.active FROM remember_tokens rt JOIN users u ON u.id=rt.user_id WHERE rt.selector=? AND rt.expires_at>NOW() LIMIT 1');$stmt->execute([$parts[1]]);$token=$stmt->fetch();
         if(!$token||!(bool)$token['active']||!hash_equals($token['validator_hash'],hash('sha256',$parts[2]))){self::forgetDevice();return;}
         session_regenerate_id(true);$_SESSION['user_id']=(int)$token['user_id'];
-        $validator=bin2hex(random_bytes(32));$expires=time()+self::REMEMBER_DAYS*86400;Database::connection()->prepare('UPDATE remember_tokens SET validator_hash=?,expires_at=? WHERE id=?')->execute([hash('sha256',$validator),date('Y-m-d H:i:s',$expires),$token['id']]);self::setRememberCookie($parts[1].':'.$validator,$expires);
+        // Keep the validator stable during parallel operator requests. Rotating it here
+        // makes a second simultaneous poll look stolen and deletes an otherwise valid device token.
+        $expires=time()+self::REMEMBER_DAYS*86400;Database::connection()->prepare('UPDATE remember_tokens SET expires_at=? WHERE id=?')->execute([date('Y-m-d H:i:s',$expires),$token['id']]);self::setRememberCookie($parts[1].':'.$parts[2],$expires);
     }
 
     private static function forgetDevice(): void
