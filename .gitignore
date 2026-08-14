@@ -20,3 +20,5 @@ public/uploads/speech/*
 deployment/windows/notifier/*.o
 deployment/android/notifier/reka-release.keystore
 deployment/android/notifier/build/
+__pycache__/
+*.pyc
