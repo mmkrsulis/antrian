@@ -33,11 +33,11 @@ $notificationDeviceAuth = static function() use ($json): array {
 
 try {
     if ($path === '/health') { try { Database::connection()->query('SELECT 1'); $json(['status'=>'ok']); } catch (Throwable) { $json(['status'=>'starting'],503); } }
-    $downloadFiles=['/downloads/reka-queue-windows-server.zip'=>'reka-queue-windows-server.zip','/downloads/reka-queue-windows-startup.zip'=>'reka-queue-windows-startup.zip','/downloads/reka-display-startup.zip'=>'reka-display-startup.zip','/downloads/reka-kiosk-printer.zip'=>'reka-kiosk-printer.zip','/downloads/reka-operator-client.zip'=>'reka-operator-client.zip','/downloads/reka-windows-notifier.zip'=>'reka-windows-notifier.zip','/downloads/reka-display-client.zip'=>'reka-display-client.zip','/downloads/reka-queue-online-wordpress.zip'=>'reka-queue-online-wordpress.zip'];
+    $downloadFiles=['/downloads/reka-queue-windows-server.zip'=>'reka-queue-windows-server.zip','/downloads/reka-queue-windows-startup.zip'=>'reka-queue-windows-startup.zip','/downloads/reka-display-startup.zip'=>'reka-display-startup.zip','/downloads/reka-kiosk-printer.zip'=>'reka-kiosk-printer.zip','/downloads/reka-operator-client.zip'=>'reka-operator-client.zip','/downloads/RekaQueueNotifierSetup.exe'=>'RekaQueueNotifierSetup.exe','/downloads/reka-windows-notifier.zip'=>'reka-windows-notifier.zip','/downloads/reka-display-client.zip'=>'reka-display-client.zip','/downloads/reka-queue-online-wordpress.zip'=>'reka-queue-online-wordpress.zip'];
     if (isset($downloadFiles[$path]) && in_array($method, ['GET','HEAD'], true)) {
         $downloadName=$downloadFiles[$path];$file=dirname(__DIR__).'/deployment/'.$downloadName;
         if (!is_file($file)) { http_response_code(404); exit('Download tidak ditemukan.'); }
-        header('Content-Type: application/zip');
+        header('Content-Type: '.(str_ends_with($downloadName,'.exe')?'application/vnd.microsoft.portable-executable':'application/zip'));
         header('Content-Disposition: attachment; filename="'.$downloadName.'"');
         header('Content-Length: '.filesize($file));
         header('Cache-Control: no-store');

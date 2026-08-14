@@ -1,10 +1,10 @@
 REKA QUEUE WINDOWS NOTIFIER
 ===========================
 
-1. Extract this ZIP into a permanent folder, for example C:\RekaQueueNotifier.
-2. Open reka-notifier.ini with Notepad.
+1. Run RekaQueueNotifierSetup.exe.
+2. Click the notifier icon in the Windows system tray and open Settings.
 3. Set SERVER_URL, USERNAME, and PASSWORD, then save it.
-4. Run RekaQueueNotifier.exe.
+4. Select Reconnect from the tray menu.
 
 The password is used once and automatically removed from the INI after registration.
 The generated device token is stored in Windows Credential Manager. The notifier
@@ -18,3 +18,5 @@ Tray menu:
 - Exit: close the notifier until the next Windows sign-in.
 
 Windows notifications must be enabled for Reka Queue Notifier in Windows Settings.
+To remove it, open Windows Settings > Apps > Installed apps, find Reka Queue
+Notifier, open its menu, and choose Uninstall.

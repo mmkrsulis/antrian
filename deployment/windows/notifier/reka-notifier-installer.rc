@@ -1,0 +1,4 @@
+101 RCDATA "deployment/windows/notifier/RekaQueueNotifier.exe"
+102 RCDATA "deployment/windows/notifier/Uninstall.exe"
+103 RCDATA "deployment/windows/notifier/reka-notifier.ini"
+104 RCDATA "deployment/windows/notifier/README.txt"
