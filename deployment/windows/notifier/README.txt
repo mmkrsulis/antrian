@@ -2,9 +2,8 @@ REKA QUEUE WINDOWS NOTIFIER
 ===========================
 
 1. Run RekaQueueNotifierSetup.exe.
-2. Click the notifier icon in the Windows system tray and open Settings.
-3. Set SERVER_URL, USERNAME, and PASSWORD, then save it.
-4. Select Reconnect from the tray menu.
+2. Complete the setup wizard with the server URL, username, and password.
+3. Select Save & Connect. The notifier then stays in the Windows system tray.
 
 The password is used once and automatically removed from the INI after registration.
 The generated device token is stored in Windows Credential Manager. The notifier
