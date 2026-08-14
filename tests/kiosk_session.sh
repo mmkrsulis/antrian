@@ -1,6 +1,6 @@
 #!/bin/sh
 set -eu
-base_url="${BASE_URL:-http://192.168.12.68:8090}"
+base_url="${BASE_URL:-http://127.0.0.1:8090}"
 cookie_file="$(mktemp)"
 kiosk="$(curl -fsS -c "$cookie_file" "$base_url/kiosk")"
 token="$(printf '%s' "$kiosk" | sed -n 's/.*window.QUEUE={csrf:"\([^"]*\)"}.*/\1/p')"

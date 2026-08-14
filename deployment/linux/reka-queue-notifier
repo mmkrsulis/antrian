@@ -27,7 +27,7 @@ def request(url, data=None, token=None):
 def setup():
     old = load()
     print("\nReka Queue Notifier — Linux setup\n")
-    server = input("Server URL [%s]: " % old.get("server", "http://192.168.12.68:8090")).strip() or old.get("server", "http://192.168.12.68:8090")
+    server = input("Server URL [%s]: " % old.get("server", "http://server-address:8090")).strip() or old.get("server", "http://server-address:8090")
     server = server.rstrip("/")
     username = input("Operator username: ").strip()
     password = getpass.getpass("Password (not stored): ")

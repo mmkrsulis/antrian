@@ -43,7 +43,7 @@
             <section id="printer" class="card settings-section">
                 <header><span>▤</span><div><h2>Printer Tiket</h2><p>Konten yang dicetak pada printer thermal.</p></div></header>
                 <div class="settings-fields">
-                    <label class="settings-wide">Header tiket<textarea name="ticket_header" rows="4" maxlength="300" required><?=e($branding['ticket_header']??"PEMERINTAH KABUPATEN WONOGIRI\nDINAS PENDIDIKAN DAN KEBUDAYAAN")?></textarea><small>Dicetak di atas nama layanan dan nomor antrean. Mendukung beberapa baris.</small></label>
+                    <label class="settings-wide">Header tiket<textarea name="ticket_header" rows="4" maxlength="300" required><?=e($branding['ticket_header']??"NAMA INSTANSI\nSISTEM ANTREAN DIGITAL")?></textarea><small>Dicetak di atas nama layanan dan nomor antrean. Mendukung beberapa baris.</small></label>
                     <label class="settings-wide">Footer tiket<textarea name="ticket_footer" rows="4" maxlength="300" required><?=e($branding['ticket_footer']??"Mohon menunggu nomor Anda dipanggil.\nTerima kasih.")?></textarea><small>Dicetak pada bagian bawah tiket sebelum kertas dipotong.</small></label>
                 </div>
             </section>

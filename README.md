@@ -2,33 +2,36 @@
 
 Aplikasi antrean web berbasis PHP 8.3 dan MariaDB. Alur inti mencakup pengambilan tiket dari kiosk, pemanggilan dan pemrosesan oleh operator, display realtime dengan suara Bahasa Indonesia, administrasi layanan, dashboard, audit trail, dan laporan CSV.
 
-## Live test dengan Docker
+## Instalasi Docker
+
+Salin `.env.example` menjadi `.env.live`, lalu isi URL, alamat bind, password database, kunci display, API key, dan `LIVE_ADMIN_PASSWORD` dengan nilai privat yang unik.
 
 ```bash
-docker compose up -d --build
-docker compose exec -T web php /var/www/html/bin/install-live.php
+cp .env.example .env.live
+docker compose --env-file .env.live up -d --build
+docker compose --env-file .env.live exec -T web php /var/www/html/bin/install-live.php
 ```
 
-Buka `http://your_ip:8090` dari perangkat yang sudah login ke tailnet yang sama. Port web di-bind hanya ke IP Tailscale server agar tidak ikut terbuka pada interface publik/LAN.
+Buka `http://server-address:8090` dari perangkat yang diizinkan. Gunakan firewall atau Tailscale ACL agar port hanya dapat diakses dari jaringan yang diperlukan.
 
 Untuk memakai nama lokal `http://antrian.test:8090`, tambahkan baris berikut ke hosts komputer yang membuka aplikasi:
 
 ```text
-your_ip: antrian.test
+server_ip antrian.test
 ```
 
-Akun awal: `admin` / `AdminLive123!`. Ganti password segera. URL display mengikuti nilai `DISPLAY_ACCESS_KEY` pada konfigurasi server.
+Sebelum instalasi, set `LIVE_ADMIN_PASSWORD` dengan password administrator yang kuat dan unik. URL display mengikuti nilai `DISPLAY_ACCESS_KEY` pada konfigurasi server. Tidak ada password bawaan di repositori.
 
 Stop tanpa menghapus database:
 
 ```bash
-docker compose down
+docker compose --env-file .env.live down
 ```
 
 Reset total data live-test:
 
 ```bash
-docker compose down -v
+docker compose --env-file .env.live down -v
 ```
 
 ## Instalasi browser
@@ -38,7 +41,7 @@ Salin `.env.example` menjadi `.env`, isi kredensial MySQL/MariaDB, arahkan docum
 ## Pengujian
 
 ```bash
-BASE_URL=http://your_ip::8090 sh tests/critical_path.sh
+BASE_URL=http://server-address:8090 DISPLAY_ACCESS_KEY=your-private-key sh tests/critical_path.sh
 ```
 
 ## Pendaftaran online dan integrasi website
@@ -55,4 +58,8 @@ Lihat [dokumentasi deployment](docs/deployment.md), [arsitektur](docs/architectu
 
 Development progress is tracked in [docs/ROADMAP.md](docs/ROADMAP.md), with executed checks recorded under `docs/verification/`.
 
-Live-test scoped operator account: `operator-ptk` / `OperatorPTK123!`. It is assigned only to Loket PTK and the two PTK services. Replace or disable this development credential before any non-development deployment.
+Create operator accounts from the administrator interface and assign only the required services and counters. Development and production credentials must be supplied privately and must never be committed.
+
+## Lisensi
+
+Reka Queue Management tersedia sebagai perangkat lunak open source berdasarkan [MIT License](LICENSE). Copyright © 2026 Sulis Setiyawan.

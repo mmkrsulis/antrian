@@ -1,6 +1,6 @@
 #!/bin/sh
 set -eu
-base_url="${BASE_URL:-http://100.64.131.49:8090}"
+base_url="${BASE_URL:-http://127.0.0.1:8090}"
 cookie_file="$(mktemp)"
 trap 'rm -f "$cookie_file"' EXIT
 
@@ -15,6 +15,6 @@ ticket_page="$(curl -fsS "$base_url/ticket/$public_id")"
 printf '%s' "$ticket_page" | grep -q 'Mohon menunggu'
 printf '%s' "$ticket_page" | grep -q "addEventListener('load'"
 if printf '%s' "$ticket_page" | grep -q 'Status:'; then echo 'Ticket status must not be displayed.' >&2; exit 1; fi
-display_key="${DISPLAY_ACCESS_KEY:-reka-display-wonogiri}"
+display_key="${DISPLAY_ACCESS_KEY:?DISPLAY_ACCESS_KEY is required}"
 curl -fsS "$base_url/display?key=$display_key" | grep -q 'NOMOR ANTREAN DIPANGGIL'
 echo "Critical-path smoke test passed."

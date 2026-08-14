@@ -5,7 +5,7 @@ color 1F
 echo =============================================
 echo   REKA QUEUE - KIOSK AND PRINTER STARTUP
 echo =============================================
-set "SERVER_URL=http://100.64.131.49:8090"
+set "SERVER_URL=http://server-address:8090"
 set "CONFIG=%~dp0reka-queue-config.ini"
 if exist "%CONFIG%" for /f "usebackq eol=# tokens=1,* delims==" %%A in ("%CONFIG%") do if not "%%A"=="" set "%%A=%%B"
 set "QUEUE_URL=%SERVER_URL%/kiosk?directprint=1"

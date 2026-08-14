@@ -5,8 +5,8 @@ services:
     build: .
     restart: unless-stopped
     ports:
-      - "${QUEUE_BIND_IP:-100.64.131.49}:8090:80"
-      - "${QUEUE_LAN_IP:-192.168.12.68}:8090:80"
+      - "${QUEUE_BIND_IP:?Set QUEUE_BIND_IP in your private environment}:8090:80"
+      - "${QUEUE_LAN_IP:?Set QUEUE_LAN_IP in your private environment}:8090:80"
     env_file: .env.live
     volumes:
       - .:/var/www/html
@@ -22,11 +22,8 @@ services:
   db:
     image: mariadb:11.4
     restart: unless-stopped
-    environment:
-      MARIADB_DATABASE: queue_management
-      MARIADB_USER: queue_user
-      MARIADB_PASSWORD: queue_live_password
-      MARIADB_ROOT_PASSWORD: queue_root_live_password
+    env_file: .env.live
+    entrypoint: ["/bin/sh", "-c", "export MARIADB_DATABASE=\"$$DB_DATABASE\" MARIADB_USER=\"$$DB_USERNAME\" MARIADB_PASSWORD=\"$$DB_PASSWORD\" MARIADB_RANDOM_ROOT_PASSWORD=1; exec docker-entrypoint.sh mariadbd"]
     volumes:
       - queue_db_data:/var/lib/mysql
     healthcheck:

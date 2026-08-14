@@ -21,7 +21,7 @@ The module supports a native form at `/online-registration` and external PHP/Wor
 Registration request:
 
 ```json
-{"service_id":1,"visitor_name":"Budi Santoso","phone":"08123456789","email":"budi@example.test","identity_number":"","notes":"Konsultasi berkas","visit_date":"2026-08-09","consent":true}
+{"service_id":1,"visitor_name":"Budi Santoso","phone":"081200000000","email":"budi@example.test","identity_number":"","notes":"Konsultasi berkas","visit_date":"2026-08-09","consent":true}
 ```
 
 Check-in request:
@@ -34,4 +34,4 @@ Responses use `{ "data": ... }`; errors use `{ "error": "..." }` with an appropr
 
 ## WordPress plugin
 
-Install `reka-queue-online-wordpress.zip`, then open **Settings → Reka Queue** and enter the queue server URL plus `ONLINE_API_KEY`. Add `[reka_queue_form]` to a registration page and `[reka_queue_checkin]` to a check-in page. To preselect a service, use `[reka_queue_form service="DAPODIK"]`.
+Install `reka-queue-online-wordpress.zip`, then open **Settings → Reka Queue** and enter the queue server URL plus `ONLINE_API_KEY`. Add `[reka_queue_form]` to a registration page and `[reka_queue_checkin]` to a check-in page. To preselect a service, use `[reka_queue_form service="Pendaftaran"]`.

@@ -2,9 +2,9 @@
 
 ## Docker live-test
 
-Jalankan perintah di README. Database berada di named volume `queue-management-live_queue_db_data` dan tidak hilang saat restart biasa. Konfigurasi live-test mengikat port `8090` ke IP Tailscale `100.64.131.49`; ubah `QUEUE_BIND_IP` bila alamat node berubah.
+Jalankan perintah di README. Database berada di named volume `queue-management-live_queue_db_data` dan tidak hilang saat restart biasa. Atur `QUEUE_BIND_IP` dan `QUEUE_LAN_IP` pada file environment privat sesuai alamat server Anda.
 
-The verified development endpoint is `http://100.64.131.49:8090`, available only to devices connected to the same tailnet.
+For Tailscale deployment, use the server's private tailnet address and do not commit it to the repository.
 
 For automatic printing without a browser print dialog, start the kiosk browser with `--kiosk --kiosk-printing` and set the thermal printer as the operating-system default printer. The application triggers `window.print()` immediately after ticket issuance and returns to the kiosk after printing.
 

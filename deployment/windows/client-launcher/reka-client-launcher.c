@@ -45,8 +45,8 @@ int WINAPI WinMain(HINSTANCE instance,HINSTANCE previous,LPSTR command_line,int 
     char directory[1024],executable[1024],ini[1200],server[512],display_key[256],auto_start[16],monitor_x[32],browser[1024],url[1024],arguments[4096],local_app_data[1024],profile[1200];int firefox=0;
     executable_directory(directory,sizeof(directory),executable,sizeof(executable));
     snprintf(ini,sizeof(ini),"%s\\reka-queue-config.ini",directory);
-    GetPrivateProfileStringA("client","SERVER_URL","http://100.64.131.49:8090",server,sizeof(server),ini);
-    GetPrivateProfileStringA("client","DISPLAY_KEY","reka-display-wonogiri",display_key,sizeof(display_key),ini);
+    GetPrivateProfileStringA("client","SERVER_URL","http://server-address:8090",server,sizeof(server),ini);
+    GetPrivateProfileStringA("client","DISPLAY_KEY","change-this-display-key",display_key,sizeof(display_key),ini);
     GetPrivateProfileStringA("client","MONITOR_X","1920",monitor_x,sizeof(monitor_x),ini);
     GetPrivateProfileStringA("client","AUTO_START","1",auto_start,sizeof(auto_start),ini);
     size_t length=strlen(server);while(length&&server[length-1]=='/')server[--length]=0;

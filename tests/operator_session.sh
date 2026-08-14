@@ -1,8 +1,8 @@
 #!/bin/sh
 set -eu
-base_url="${BASE_URL:-http://192.168.12.68:8090}"
-username="${OPERATOR_USERNAME:-DAPODIK}"
-password="${OPERATOR_PASSWORD:-123456789}"
+base_url="${BASE_URL:-http://127.0.0.1:8090}"
+username="${OPERATOR_USERNAME:?OPERATOR_USERNAME is required}"
+password="${OPERATOR_PASSWORD:?OPERATOR_PASSWORD is required}"
 cookie="$(mktemp)"
 login="$(curl -fsS -c "$cookie" "$base_url/login?client=operator")"
 token="$(printf '%s' "$login" | sed -n 's/.*name="_csrf" value="\([^"]*\)".*/\1/p')"

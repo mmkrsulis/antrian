@@ -36,7 +36,7 @@ When updating the kiosk package, extract the new ZIP over the old folder and run
 
 Operators do not require an automatic launcher. Open and bookmark:
 
-`http://100.64.131.49:8090/operator`
+`http://server-address:8090/operator`
 
 Each operator signs in with their own account and sees only assigned services and counters.
 

@@ -5,8 +5,8 @@ color 1F
 echo =============================================
 echo   REKA QUEUE - DISPLAY STARTUP
 echo =============================================
-set "SERVER_URL=http://100.64.131.49:8090"
-set "DISPLAY_KEY=reka-display-wonogiri"
+set "SERVER_URL=http://server-address:8090"
+set "DISPLAY_KEY=change-this-display-key"
 set "MONITOR_X=1920"
 set "CONFIG=%~dp0reka-queue-config.ini"
 if exist "%CONFIG%" for /f "usebackq eol=# tokens=1,* delims==" %%A in ("%CONFIG%") do if not "%%A"=="" set "%%A=%%B"

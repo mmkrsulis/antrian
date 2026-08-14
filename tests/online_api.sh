@@ -1,6 +1,6 @@
 #!/bin/sh
 set -eu
-base_url="${BASE_URL:-http://192.168.12.68:8090}"
+base_url="${BASE_URL:-http://127.0.0.1:8090}"
 api_key="${ONLINE_API_KEY:?ONLINE_API_KEY is required}"
 code="$(curl -sS -o /tmp/reka-unauthorized.json -w '%{http_code}' "$base_url/api/public/services")"
 [ "$code" = 401 ]
