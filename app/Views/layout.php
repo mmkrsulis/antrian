@@ -14,6 +14,7 @@ $active=static fn(string $path): string => $currentPath===$path?' active':'';
             <a class="<?=$active('/dashboard')?>" href="/dashboard"><span>⌂</span>Dashboard</a>
             <a class="<?=$active('/operator')?>" href="/operator"><span>◉</span>Konsol Operator</a>
             <a href="/display?key=<?=e(env('DISPLAY_ACCESS_KEY'))?>&fullscreen=1" target="_blank"><span>▣</span>Buka Display</a>
+            <?php if(!$isAdmin):?><a href="/downloads/RekaQueueNotifierSetup.exe" download><span>⇩</span>Download Notifier</a><?php endif?>
             <?php if($isAdmin):?>
             <p>MANAJEMEN</p>
             <a class="<?=$active('/admin/services')?>" href="/admin/services"><span>▦</span>Layanan</a>
