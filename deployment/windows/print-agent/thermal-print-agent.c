@@ -29,14 +29,16 @@ static void add_wrapped_text(unsigned char *buf,size_t *n,const char *text,size_
 }
 static int raw_print(const unsigned char *data,DWORD length){DWORD needed=0,written=0;HANDLE printer=NULL;DOC_INFO_1A doc={"Reka Queue Ticket",NULL,"RAW"};GetDefaultPrinterA(NULL,&needed);if(!needed)return 0;char *name=(char*)malloc(needed);if(!name||!GetDefaultPrinterA(name,&needed))return 0;if(!OpenPrinterA(name,&printer,NULL)){free(name);return 0;}free(name);int ok=0;if(StartDocPrinterA(printer,1,(LPBYTE)&doc)){if(StartPagePrinter(printer)){ok=WritePrinter(printer,(LPVOID)data,length,&written)&&written==length;EndPagePrinter(printer);}EndDocPrinter(printer);}ClosePrinter(printer);return ok;}
 static int print_ticket(const char *json){
-    char header[320]="REKA QUEUE MANAGEMENT",footer[320]="Mohon menunggu nomor Anda dipanggil.",service[160]="LAYANAN",number[64]="---",created[64]="";
+    char header[320]="REKA QUEUE MANAGEMENT",footer[320]="Mohon menunggu nomor Anda dipanggil.",service[160]="LAYANAN",subservice[180]="",number[64]="---",created[64]="";
     json_value(json,"ticket_header",header,sizeof(header));
     json_value(json,"ticket_footer",footer,sizeof(footer));
     json_value(json,"service_name",service,sizeof(service));
+    json_value(json,"sub_service_name",subservice,sizeof(subservice));
     json_value(json,"ticket_number",number,sizeof(number));
     json_value(json,"created_at",created,sizeof(created));
     CharUpperBuffA(header,(DWORD)strlen(header));
     CharUpperBuffA(service,(DWORD)strlen(service));
+    CharUpperBuffA(subservice,(DWORD)strlen(subservice));
     CharUpperBuffA(number,(DWORD)strlen(number));
 
     unsigned char b[4096];size_t n=0;
@@ -54,6 +56,7 @@ static int print_ticket(const char *json){
     add_text(b,&n,"--------------------------------\n");
     add_bytes(b,&n,boldon,sizeof(boldon));
     add_wrapped_text(b,&n,service,32);
+    if(subservice[0])add_wrapped_text(b,&n,subservice,32);
     add_bytes(b,&n,boldoff,sizeof(boldoff));
     add_text(b,&n,created);
     add_text(b,&n,"\nNOMOR ANTREAN\n\n");
