@@ -38,6 +38,12 @@ docker compose --env-file .env.live down -v
 
 Salin `.env.example` menjadi `.env`, isi kredensial MySQL/MariaDB, arahkan document root Apache/Nginx ke folder `public`, lalu buka `/install`. Installer memeriksa runtime, menjalankan migration, membuat data awal, dan mengunci instalasi.
 
+## Instalasi Windows tanpa Docker atau XAMPP
+
+Administrator dapat mengunduh `RekaQueueServerSetup.exe` dari menu **Aplikasi Client**. Installer offline tersebut sudah menyertakan Apache, PHP, dan MariaDB serta menyediakan wizard konfigurasi, Windows services, aturan firewall, backup harian, shortcut, upgrade, dan uninstaller. Data operasional disimpan terpisah di `%ProgramData%\Reka Queue` agar tetap aman ketika program diperbarui atau dihapus dengan opsi penyimpanan data.
+
+Untuk membangun installer dari source di Linux, jalankan `bash deployment/build-windows-server-package.sh`. Build akan mengambil runtime resmi Apache Friends bila belum tersedia, memverifikasi checksum yang dipin, lalu menghasilkan `deployment/RekaQueueServerSetup.exe`.
+
 ## Pengujian
 
 ```bash

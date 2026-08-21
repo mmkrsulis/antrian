@@ -20,5 +20,9 @@ public/uploads/speech/*
 deployment/windows/notifier/*.o
 deployment/android/notifier/reka-release.keystore
 deployment/android/notifier/build/
+deployment/RekaQueueServerSetup.exe
+deployment/windows-server/RekaQueueServerSetup.exe
+deployment/windows-server/runtime/*.zip
+deployment/windows-server/runtime/vc_redist.x64.exe
 __pycache__/
 *.pyc
