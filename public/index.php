@@ -30,6 +30,27 @@ $notificationDeviceAuth = static function() use ($json): array {
     if(!$device)$json(['error'=>'Token perangkat tidak valid atau sudah kedaluwarsa.'],401);
     $db->prepare('UPDATE notification_devices SET last_used_at=NOW() WHERE id=?')->execute([$device['device_id']]);return $device;
 };
+$configuredClientDownloads=['reka-queue-windows-startup.zip','reka-display-startup.zip','reka-kiosk-printer.zip','reka-operator-client.zip','reka-display-client.zip'];
+$requestServerUrl=static function(): string {
+    $forwarded=trim(explode(',',(string)($_SERVER['HTTP_X_FORWARDED_PROTO']??''))[0]);
+    $scheme=in_array($forwarded,['http','https'],true)?$forwarded:((!empty($_SERVER['HTTPS'])&&$_SERVER['HTTPS']!=='off')?'https':'http');
+    $host=trim((string)($_SERVER['HTTP_HOST']??''));
+    if($host===''||!preg_match('/^(?:[a-zA-Z0-9.-]+|\[[0-9a-fA-F:]+\])(?::\d{1,5})?$/',$host)){
+        $fallback=(string)env('APP_URL','http://127.0.0.1:8090');
+        return rtrim($fallback,'/');
+    }
+    return $scheme.'://'.$host;
+};
+$configuredClientArchive=static function(string $source,string $serverUrl): string {
+    if(!class_exists(ZipArchive::class))throw new RuntimeException('ZIP extension is unavailable.');
+    $temporary=tempnam(sys_get_temp_dir(),'reka-client-');
+    if($temporary===false||!copy($source,$temporary))throw new RuntimeException('Unable to prepare client download.');
+    $zip=new ZipArchive();
+    if($zip->open($temporary)!==true){@unlink($temporary);throw new RuntimeException('Unable to open client package.');}
+    $config="[client]\r\nSERVER_URL=".rtrim($serverUrl,'/')."\r\nDISPLAY_KEY=".(string)env('DISPLAY_ACCESS_KEY','')."\r\nMONITOR_X=1920\r\nAUTO_START=1\r\n";
+    if(!$zip->addFromString('reka-queue-config.ini',$config)){$zip->close();@unlink($temporary);throw new RuntimeException('Unable to configure client package.');}
+    $zip->close();return $temporary;
+};
 
 try {
     if ($path === '/health') { try { Database::connection()->query('SELECT 1'); $json(['status'=>'ok']); } catch (Throwable) { $json(['status'=>'starting'],503); } }
@@ -37,12 +58,18 @@ try {
     if (isset($downloadFiles[$path]) && in_array($method, ['GET','HEAD'], true)) {
         $downloadName=$downloadFiles[$path];$file=dirname(__DIR__).'/deployment/'.$downloadName;
         if (!is_file($file)) { http_response_code(404); exit('Download tidak ditemukan.'); }
+        $temporary=null;
+        if(in_array($downloadName,$configuredClientDownloads,true)){
+            Auth::require(['super_admin','admin']);
+            $temporary=$configuredClientArchive($file,$requestServerUrl());$file=$temporary;
+        }
         $mime=match(pathinfo($downloadName,PATHINFO_EXTENSION)){'exe'=>'application/vnd.microsoft.portable-executable','apk'=>'application/vnd.android.package-archive','deb'=>'application/vnd.debian.binary-package',default=>'application/zip'};
         header('Content-Type: '.$mime);
         header('Content-Disposition: attachment; filename="'.$downloadName.'"');
         header('Content-Length: '.filesize($file));
         header('Cache-Control: no-store');
         if ($method === 'GET') readfile($file);
+        if($temporary!==null)@unlink($temporary);
         exit;
     }
     if ($path === '/install') {
@@ -194,7 +221,7 @@ try {
         $user=Auth::require(['super_admin','admin','operator']);$stmt=Database::connection()->prepare('SELECT enabled,sound_type,sound_url,volume,play_mode FROM user_notification_settings WHERE user_id=?');$stmt->execute([$user['id']]);$notificationSettings=$stmt->fetch()?:['enabled'=>1,'sound_type'=>'chime','sound_url'=>'','volume'=>'0.80','play_mode'=>'auto'];View::render('operator-notifications',compact('user','notificationSettings'),false);exit;
     }
     if ($path === '/operator/apps') {
-        $user=Auth::require(['super_admin','admin','operator']);View::render('operator-apps',compact('user'));exit;
+        $user=Auth::require(['super_admin','admin','operator']);if(in_array($user['role'],['super_admin','admin'],true))$redirect('/admin/downloads');View::render('operator-apps',compact('user'));exit;
     }
     if ($path === '/api/operator/session' && $method==='GET') {$user=Auth::user();if(!$user)$json(['error'=>'Sesi operator berakhir. Silakan masuk kembali.'],401);$json(['authenticated'=>true,'csrf'=>csrf_token(),'expires_in'=>2592000]);}
     if ($path === '/api/operator/next' && $method==='POST') {

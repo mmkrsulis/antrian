@@ -15,7 +15,7 @@ $active=static fn(string $path): string => $currentPath===$path?' active':'';
             <a class="<?=$active('/dashboard')?>" href="/dashboard"><span>⌂</span>Dashboard</a>
             <a class="<?=$active('/operator')?>" href="/operator"><span>◉</span>Konsol Operator</a>
             <a href="/display?key=<?=e(env('DISPLAY_ACCESS_KEY'))?>&fullscreen=1" target="_blank"><span>▣</span>Buka Display</a>
-            <a class="<?=$active('/operator/apps')?>" href="/operator/apps"><span>⇩</span>Aplikasi Client</a>
+            <?php if(!$isAdmin):?><a class="<?=$active('/operator/apps')?>" href="/operator/apps"><span>⇩</span>Aplikasi Client</a><?php endif?>
             <a class="<?=$active('/admin/sub-services')?>" href="/admin/sub-services"><span>≡</span>Sublayanan</a>
             <?php if($isAdmin):?>
             <p>MANAJEMEN</p>
@@ -26,7 +26,7 @@ $active=static fn(string $path): string => $currentPath===$path?' active':'';
             <p>SISTEM</p>
             <a class="<?=$active('/admin/settings')?>" href="/admin/settings"><span>⚙</span>Pengaturan</a>
             <a class="<?=$active('/reports')?>" href="/reports"><span>▤</span>Laporan</a>
-            <a class="<?=$active('/admin/downloads')?>" href="/admin/downloads"><span>⇩</span>Download Client</a>
+            <a class="<?=$active('/admin/downloads')?>" href="/admin/downloads"><span>⇩</span>Aplikasi Client</a>
             <?php endif?>
         </nav>
         <div class="admin-sidebar-user"><div><b><?=e($layoutUser['name'])?></b><small><?=e(ucwords(str_replace('_',' ',$layoutUser['role'])))?></small></div><form method="post" action="/logout"><input type="hidden" name="_csrf" value="<?=csrf_token()?>"><button type="submit" title="Keluar">↪</button></form></div>
