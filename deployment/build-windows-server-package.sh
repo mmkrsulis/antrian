@@ -38,7 +38,7 @@ chmod 644 "$installer" "$repo_dir/deployment/RekaQueueServerSetup.exe"
 installer_size=$(stat -c %s "$installer")
 installer_sha256=$(sha256sum "$installer"|awk '{print $1}')
 cat > "$repo_dir/deployment/windows-server/release-manifest.txt" <<EOF
-Reka Queue Server Setup 1.0.2
+Reka Queue Server Setup 1.0.3
 Filename: RekaQueueServerSetup.exe
 Size: $installer_size bytes
 SHA-256: $installer_sha256
