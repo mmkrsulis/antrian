@@ -8,6 +8,7 @@ use App\Core\Database;
 use App\Core\View;
 use App\Services\QueueService;
 use App\Services\OnlineRegistrationService;
+use App\Services\TicketPdf;
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
@@ -163,6 +164,7 @@ try {
         View::render('kiosk',compact('services','subServices'),false); exit;
     }
     if ($path === '/api/tickets' && $method==='POST') { $data=$input(); $csrf($data); $subServiceId=(int)($data['sub_service_id']??0);$ticket=(new QueueService)->issue((int)($data['service_id']??0),$subServiceId?:null,true); $json(['data'=>$ticket],201); }
+    if (preg_match('#^/ticket/([a-f0-9-]+)\.pdf$#',$path,$m)) { $ticket=(new QueueService)->ticket($m[1]);$pdf=TicketPdf::render($ticket);header('Content-Type: application/pdf');header('Content-Disposition: attachment; filename="'.preg_replace('/[^A-Z0-9-]/i','',(string)$ticket['ticket_number']).'.pdf"');header('Content-Length: '.strlen($pdf));echo $pdf;exit; }
     if (preg_match('#^/ticket/([a-f0-9-]+)$#',$path,$m)) { $ticket=(new QueueService)->ticket($m[1]); View::render('ticket',compact('ticket'),false); exit; }
     if ($path === '/display') {
         $key=(string)($_GET['key']??''); if (!hash_equals((string)env('DISPLAY_ACCESS_KEY'),$key)) { http_response_code(403); exit('Kunci display tidak valid.'); }

@@ -99,7 +99,7 @@ if(!$serverIp -or $serverIp -eq 'auto'){
 if(!$serverIp){$serverIp='127.0.0.1'}
 $appUrl="http://${serverIp}:$port"
 $envStore=Join-Path $configDir '.env'
-$fresh=!(Test-Path $envStore)
+$fresh=!(Test-Path (Join-Path $installDir 'installation.txt'))
 if($fresh){
     if($adminPassword.Length -lt 10){throw 'Administrator password must contain at least 10 characters.'}
     $dbPassword=Random-Secret 28;$displayKey=Random-Secret 32;$onlineKey=Random-Secret 40
@@ -153,7 +153,17 @@ $phpIni=Join-Path $xamppDir 'php\php.ini'
 if(!(Select-String -Path $phpIni -SimpleMatch '; Reka Queue managed settings' -Quiet)){Add-Content $phpIni "`r`n; Reka Queue managed settings`r`nupload_max_filesize=512M`r`npost_max_size=520M`r`nmax_execution_time=300`r`ndate.timezone=Asia/Jakarta`r`n"}
 
 $apacheService='RekaQueueApache';$databaseService='RekaQueueMariaDB'
-if(!(Get-Service $databaseService -ErrorAction SilentlyContinue)){Invoke-Native (Join-Path $xamppDir 'mysql\bin\mysqld.exe') @("--defaults-file=$(Join-Path $xamppDir 'mysql\bin\my.ini')",'--install',$databaseService)}
+$mysqld=Join-Path $xamppDir 'mysql\bin\mysqld.exe';$myIni=Join-Path $xamppDir 'mysql\bin\my.ini'
+# Register MariaDB through Windows rather than `mysqld --install`. The portable
+# XAMPP build can reject self-registration on otherwise supported Windows PCs.
+$databaseCommand="`"$mysqld`" --defaults-file=`"$myIni`" --standalone"
+if(Get-Service $databaseService -ErrorAction SilentlyContinue){
+    Stop-Service $databaseService -Force -ErrorAction SilentlyContinue
+    & sc.exe config $databaseService "binPath= $databaseCommand" 'start= auto'|Out-Null
+    if($LASTEXITCODE -ne 0){throw "Unable to update the MariaDB Windows service ($LASTEXITCODE)."}
+}else{
+    New-Service -Name $databaseService -BinaryPathName $databaseCommand -DisplayName 'Reka Queue MariaDB' -Description 'Local database for Reka Queue Management' -StartupType Automatic|Out-Null
+}
 if(!(Get-Service $apacheService -ErrorAction SilentlyContinue)){Invoke-Native (Join-Path $xamppDir 'apache\bin\httpd.exe') @('-k','install','-n',$apacheService)}
 sc.exe config $databaseService start= auto|Out-Null
 sc.exe config $apacheService start= auto|Out-Null

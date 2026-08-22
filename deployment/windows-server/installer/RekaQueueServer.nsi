@@ -10,7 +10,7 @@ CRCCheck on
 !include "WinMessages.nsh"
 
 !define PRODUCT_NAME "Reka Queue Server"
-!define PRODUCT_VERSION "1.0.0"
+!define PRODUCT_VERSION "1.0.1"
 !define COMPANY_NAME "rekakarsa"
 !define UNINSTALL_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\RekaQueueServer"
 !define REPO_ROOT "..\..\.."
@@ -61,7 +61,7 @@ Function .onInit
     StrCpy $AdminUsername "admin"
     StrCpy $ServerPort "8090"
     StrCpy $UpgradeMode "0"
-    IfFileExists "$APPDATA\Reka Queue\config\.env" 0 +2
+    IfFileExists "$INSTDIR\installation.txt" 0 +2
         StrCpy $UpgradeMode "1"
 FunctionEnd
 
