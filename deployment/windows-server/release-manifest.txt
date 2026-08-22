@@ -1,7 +1,7 @@
-Reka Queue Server Setup 1.0.1
+Reka Queue Server Setup 1.0.2
 Filename: RekaQueueServerSetup.exe
-Size: 256394620 bytes
-SHA-256: 123dcc86bad1cf9b09e52008d024506e9543ac27e6bd4b9074a3a98dbda48154
+Size: 256395192 bytes
+SHA-256: ca47b1d33ea3fc8414f7aafe38fb4fb07bbff279ce38328c03c5bebe9061c08e
 
 Bundled runtime sources:
 - Apache Friends XAMPP Portable Windows x64 8.2.12-0 VS16

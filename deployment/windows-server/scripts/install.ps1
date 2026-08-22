@@ -131,6 +131,11 @@ $displayKey=$envValues.DISPLAY_ACCESS_KEY
 
 $apacheConf=Join-Path $xamppDir 'apache\conf\httpd.conf'
 $rekaConf=Join-Path $xamppDir 'apache\conf\extra\reka-queue.conf'
+$apacheText=[IO.File]::ReadAllText($apacheConf)
+# The portable XAMPP configuration also listens on port 80. Reka Queue owns only
+# the port selected in the setup wizard, so disable that default listener.
+$apacheText=[Text.RegularExpressions.Regex]::Replace($apacheText,'(?m)^\s*Listen\s+80\s*$','# Disabled by Reka Queue: Listen 80')
+[IO.File]::WriteAllText($apacheConf,$apacheText,[Text.UTF8Encoding]::new($false))
 $appPublic=(Join-Path $appDir 'public').Replace('\','/')
 $vhost=@"
 Listen $port
@@ -164,7 +169,10 @@ if(Get-Service $databaseService -ErrorAction SilentlyContinue){
 }else{
     New-Service -Name $databaseService -BinaryPathName $databaseCommand -DisplayName 'Reka Queue MariaDB' -Description 'Local database for Reka Queue Management' -StartupType Automatic|Out-Null
 }
-if(!(Get-Service $apacheService -ErrorAction SilentlyContinue)){Invoke-Native (Join-Path $xamppDir 'apache\bin\httpd.exe') @('-k','install','-n',$apacheService)}
+$httpd=Join-Path $xamppDir 'apache\bin\httpd.exe'
+New-Item -ItemType Directory -Force (Join-Path $xamppDir 'apache\logs')|Out-Null
+Invoke-Native $httpd @('-t','-f',$apacheConf)
+if(!(Get-Service $apacheService -ErrorAction SilentlyContinue)){Invoke-Native $httpd @('-k','install','-n',$apacheService,'-f',$apacheConf)}
 sc.exe config $databaseService start= auto|Out-Null
 sc.exe config $apacheService start= auto|Out-Null
 Start-Service $databaseService -ErrorAction SilentlyContinue
