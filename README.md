@@ -2,7 +2,36 @@
 
 Aplikasi antrean web berbasis PHP 8.3 dan MariaDB. Alur inti mencakup pengambilan tiket dari kiosk, pemanggilan dan pemrosesan oleh operator, display realtime dengan suara Bahasa Indonesia, administrasi layanan, dashboard, audit trail, dan laporan CSV.
 
-## Instalasi Docker
+## Instalasi cepat dari GitHub
+
+Persyaratan: Linux dengan Git, OpenSSL, Docker Engine, dan Docker Compose v2.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/mmkrsulis/antrian/main/install.sh | sudo bash
+```
+
+Installer mengunduh source ke `/opt/reka-queue`, membuat seluruh password dan
+kunci secara acak, menjalankan container, melakukan migrasi, lalu menampilkan
+URL serta akun administrator. Installer tidak akan menimpa instalasi lama.
+
+Untuk memeriksa script sebelum menjalankannya:
+
+```bash
+curl -fsSLO https://raw.githubusercontent.com/mmkrsulis/antrian/main/install.sh
+less install.sh
+sudo bash install.sh
+```
+
+Konfigurasi opsional dapat diberikan sebelum `sudo bash install.sh`:
+
+```bash
+sudo REKA_QUEUE_INSTALL_DIR=/srv/reka-queue \
+  REKA_QUEUE_PORT=8090 \
+  REKA_QUEUE_ADMIN_USERNAME=admin \
+  bash install.sh
+```
+
+## Instalasi Docker manual
 
 Salin `.env.example` menjadi `.env.live`, lalu isi URL, alamat bind, password database, kunci display, API key, dan `LIVE_ADMIN_PASSWORD` dengan nilai privat yang unik.
 
@@ -40,7 +69,7 @@ Salin `.env.example` menjadi `.env`, isi kredensial MySQL/MariaDB, arahkan docum
 
 ## Instalasi Windows tanpa Docker atau XAMPP
 
-Administrator dapat mengunduh `RekaQueueServerSetup.exe` dari menu **Aplikasi Client**. Installer offline tersebut sudah menyertakan Apache, PHP, dan MariaDB serta menyediakan wizard konfigurasi, Windows services, aturan firewall, backup harian, shortcut, upgrade, dan uninstaller. Data operasional disimpan terpisah di `%ProgramData%\Reka Queue` agar tetap aman ketika program diperbarui atau dihapus dengan opsi penyimpanan data.
+Administrator dapat mengunduh `RekaQueueServerSetup.exe` dari menu **Aplikasi Client**. Edisi Windows mandiri tersebut menggunakan PHP, Caddy, dan SQLite tanpa XAMPP, Docker, atau MariaDB. Wizard menyediakan konfigurasi, Windows services, aturan firewall, backup harian, shortcut, upgrade, dan uninstaller. Data operasional disimpan terpisah di `%ProgramData%\Reka Queue` agar tetap aman ketika program diperbarui atau dihapus dengan opsi penyimpanan data.
 
 Untuk membangun installer dari source di Linux, jalankan `bash deployment/build-windows-server-package.sh`. Build akan mengambil runtime resmi Apache Friends bila belum tersedia, memverifikasi checksum yang dipin, lalu menghasilkan `deployment/RekaQueueServerSetup.exe`.
 
@@ -54,6 +83,7 @@ BASE_URL=http://server-address:8090 DISPLAY_ACCESS_KEY=your-private-key sh tests
 
 - Formulir pengunjung: `/online-registration`
 - Check-in kode pendaftaran: `/online-check-in`
+- Referensi API terpusat: [docs/api-reference.md](docs/api-reference.md)
 - API untuk website PHP/WordPress: [docs/online-registration-api.md](docs/online-registration-api.md)
 - PHP client siap pakai: [integrations/php/RekaQueueClient.php](integrations/php/RekaQueueClient.php)
 - Plugin WordPress siap instal: `deployment/reka-queue-online-wordpress.zip`
@@ -66,6 +96,14 @@ Development progress is tracked in [docs/ROADMAP.md](docs/ROADMAP.md), with exec
 
 Create operator accounts from the administrator interface and assign only the required services and counters. Development and production credentials must be supplied privately and must never be committed.
 
-## Lisensi
+## Proyek open source
 
-Reka Queue Management tersedia sebagai perangkat lunak open source berdasarkan [MIT License](LICENSE). Copyright © 2026 Sulis Setiyawan.
+Reka Queue Management adalah perangkat lunak bebas dan open source berdasarkan
+[GNU General Public License v3.0 atau versi setelahnya](LICENSE)
+(`GPL-3.0-or-later`). Anda boleh menggunakan, mempelajari, memodifikasi, dan
+mendistribusikannya kembali sesuai ketentuan lisensi tersebut.
+
+Panduan kontribusi tersedia di [CONTRIBUTING.md](CONTRIBUTING.md), sedangkan
+pelaporan kerentanan dijelaskan di [SECURITY.md](SECURITY.md).
+
+Copyright © 2026 Sulis Setiyawan.

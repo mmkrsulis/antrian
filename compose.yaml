@@ -5,8 +5,8 @@ services:
     build: .
     restart: unless-stopped
     ports:
-      - "${QUEUE_BIND_IP:?Set QUEUE_BIND_IP in your private environment}:8090:80"
-      - "${QUEUE_LAN_IP:?Set QUEUE_LAN_IP in your private environment}:8090:80"
+      - "${QUEUE_BIND_IP:?Set QUEUE_BIND_IP in your private environment}:${QUEUE_PORT:-8090}:80"
+      - "${QUEUE_LAN_IP:?Set QUEUE_LAN_IP in your private environment}:${QUEUE_PORT:-8090}:80"
     env_file: .env.live
     volumes:
       - .:/var/www/html
