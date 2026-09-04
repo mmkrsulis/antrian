@@ -1,11 +1,16 @@
 param([string]$InstallDir='C:\RekaQueue')
 $ErrorActionPreference='Stop'
-$envFile=Join-Path $env:ProgramData 'Reka Queue\config\.env'
-if(!(Test-Path $envFile)){exit 1}
-$settings=@{};Get-Content $envFile|ForEach-Object{if($_ -match '^([^#][^=]*)=(.*)$'){$settings[$matches[1].Trim()]=$matches[2].Trim('"')}}
-$backupDir=Join-Path $env:ProgramData 'Reka Queue\backups';New-Item -ItemType Directory -Force $backupDir|Out-Null
-$stamp=Get-Date -Format 'yyyyMMdd-HHmmss';$target=Join-Path $backupDir "reka-queue-$stamp.sql"
-$mysql=Join-Path $InstallDir 'runtime\xampp\mysql\bin\mysqldump.exe'
-$arguments=@('-h','127.0.0.1','-u',$settings.DB_USERNAME,"--password=$($settings.DB_PASSWORD)",'--single-transaction','--routines','--events',$settings.DB_DATABASE)
-& $mysql @arguments|Set-Content -Encoding UTF8 $target
-Get-ChildItem $backupDir -Filter '*.sql'|Sort-Object LastWriteTime -Descending|Select-Object -Skip 30|Remove-Item -Force
+$dataDir=Join-Path $env:ProgramData 'Reka Queue'
+$database=Join-Path $dataDir 'database\reka-queue.sqlite'
+if(!(Test-Path $database)){exit 1}
+$backupDir=Join-Path $dataDir 'backups';New-Item -ItemType Directory -Force $backupDir|Out-Null
+$stamp=Get-Date -Format 'yyyyMMdd-HHmmss';$target=Join-Path $backupDir "reka-queue-$stamp.sqlite"
+$php=Join-Path $InstallDir 'runtime\php\php.exe'
+$script=Join-Path $InstallDir 'tools\sqlite-backup.php'
+if(!(Test-Path $script)){
+    $code='<?php $source=new SQLite3($argv[1],SQLITE3_OPEN_READONLY);$target=new SQLite3($argv[2]);if(!$source->backup($target)){fwrite(STDERR,"Backup failed\n");exit(1);}$target->close();$source->close();'
+    [IO.File]::WriteAllText($script,$code,[Text.UTF8Encoding]::new($false))
+}
+& $php $script $database $target
+if($LASTEXITCODE -ne 0){throw 'SQLite backup failed.'}
+Get-ChildItem $backupDir -Filter '*.sqlite'|Sort-Object LastWriteTime -Descending|Select-Object -Skip 30|Remove-Item -Force

@@ -19,21 +19,24 @@ function Random-Secret([int]$length=32) {
     try{$rng.GetBytes($bytes)}finally{$rng.Dispose()}
     return [Convert]::ToBase64String($bytes).Replace('+','A').Replace('/','B').Replace('=','').Substring(0,$length)
 }
-function Escape-Sql([string]$value){return $value.Replace("'","''")}
 function Invoke-Native([string]$file,[string[]]$arguments) {
     & $file @arguments
     if($LASTEXITCODE -ne 0){throw "Command failed ($LASTEXITCODE): $file"}
 }
-function Ensure-Junction([string]$link,[string]$target,[bool]$discardSource=$false) {
+function Escape-Xml([string]$value){return [Security.SecurityElement]::Escape($value)}
+function Ensure-Junction([string]$link,[string]$target) {
     New-Item -ItemType Directory -Force -Path $target | Out-Null
     if(Test-Path -LiteralPath $link){
         $item=Get-Item -LiteralPath $link -Force
         if($item.Attributes -band [IO.FileAttributes]::ReparsePoint){return}
-        if(!$discardSource -and (Get-ChildItem -LiteralPath $link -Force -ErrorAction SilentlyContinue|Measure-Object).Count -gt 0){Copy-Item "$link\*" $target -Recurse -Force}
+        if((Get-ChildItem -LiteralPath $link -Force -ErrorAction SilentlyContinue|Measure-Object).Count -gt 0){Copy-Item "$link\*" $target -Recurse -Force}
         Remove-Item -LiteralPath $link -Recurse -Force
     }
     cmd /c "mklink /J `"$link`" `"$target`"" | Out-Null
     if($LASTEXITCODE -ne 0){throw "Unable to create data junction: $link"}
+}
+function Remove-ServiceWrapper([string]$exe) {
+    if(Test-Path $exe){& $exe stop 2>$null; & $exe uninstall 2>$null}
 }
 
 $options=Read-Ini $OptionsFile
@@ -48,32 +51,39 @@ if($adminUsername -notmatch '^[a-zA-Z0-9._-]{3,50}$'){throw 'Administrator usern
 $payload=Join-Path $PackageRoot 'payload\app'
 if(!(Test-Path (Join-Path $payload 'public\index.php'))){throw 'Application payload is missing.'}
 
+$portOwner=Get-NetTCPConnection -State Listen -LocalPort $port -ErrorAction SilentlyContinue | Select-Object -First 1
+if($portOwner){
+    $existing=Get-Service RekaQueueWeb -ErrorAction SilentlyContinue
+    if(!$existing){throw "Server port $port is already in use. Choose another port."}
+}
+
 $dataDir=Join-Path $env:ProgramData 'Reka Queue'
 $storageDir=Join-Path $dataDir 'storage'
 $uploadsDir=Join-Path $dataDir 'uploads'
-$databaseDir=Join-Path $dataDir 'mariadb'
+$databaseDir=Join-Path $dataDir 'database'
 $configDir=Join-Path $dataDir 'config'
 $backupDir=Join-Path $dataDir 'backups'
-foreach($folder in @($installDir,$dataDir,$storageDir,$uploadsDir,$configDir,$backupDir,(Join-Path $installDir 'tools'))){New-Item -ItemType Directory -Force -Path $folder|Out-Null}
+$logDir=Join-Path $dataDir 'logs'
+foreach($folder in @($installDir,$dataDir,$storageDir,$uploadsDir,$databaseDir,$configDir,$backupDir,$logDir,(Join-Path $installDir 'tools'),(Join-Path $installDir 'assets'))){New-Item -ItemType Directory -Force -Path $folder|Out-Null}
+$iconFile=Join-Path $installDir 'assets\reka-queue.ico'
+Copy-Item (Join-Path $PackageRoot 'assets\reka-queue.ico') $iconFile -Force
+Copy-Item (Join-Path $PackageRoot 'assets\reka-queue.png') (Join-Path $installDir 'assets\reka-queue.png') -Force
 
+$runtimeDir=Join-Path $installDir 'runtime'
+$phpDir=Join-Path $runtimeDir 'php'
+$caddyDir=Join-Path $runtimeDir 'caddy'
+$serviceDir=Join-Path $runtimeDir 'services'
+foreach($folder in @($runtimeDir,$phpDir,$caddyDir,$serviceDir)){New-Item -ItemType Directory -Force -Path $folder|Out-Null}
+$phpZip=Get-ChildItem (Join-Path $PackageRoot 'runtime') -Filter 'php-*-nts-Win32-vs17-x64.zip'|Select-Object -First 1
+$caddyZip=Get-ChildItem (Join-Path $PackageRoot 'runtime') -Filter 'caddy_*_windows_amd64.zip'|Select-Object -First 1
+$winsw=Join-Path $PackageRoot 'runtime\WinSW-x64.exe'
 $vcRuntime=Join-Path $PackageRoot 'runtime\vc_redist.x64.exe'
-if(!(Test-Path $vcRuntime)){throw 'Bundled Microsoft Visual C++ runtime is missing.'}
+if(!$phpZip -or !$caddyZip -or !(Test-Path $winsw) -or !(Test-Path $vcRuntime)){throw 'A required signed runtime component is missing.'}
+
 $vcInstall=Start-Process -FilePath $vcRuntime -ArgumentList '/install','/quiet','/norestart' -Wait -PassThru
 if($vcInstall.ExitCode -notin @(0,1638,3010)){throw "Microsoft Visual C++ runtime installation failed ($($vcInstall.ExitCode))."}
-
-$runtimeRoot=Join-Path $installDir 'runtime'
-$xamppDir=Join-Path $runtimeRoot 'xampp'
-if(!(Test-Path (Join-Path $xamppDir 'apache\bin\httpd.exe'))){
-    $runtimeZip=Get-ChildItem (Join-Path $PackageRoot 'runtime') -Filter 'xampp-portable-windows-*.zip'|Select-Object -First 1
-    if(!$runtimeZip){throw 'Bundled Windows runtime is missing.'}
-    New-Item -ItemType Directory -Force $runtimeRoot|Out-Null
-    Expand-Archive -LiteralPath $runtimeZip.FullName -DestinationPath $runtimeRoot -Force
-    $candidate=Get-ChildItem $runtimeRoot -Directory -Recurse|Where-Object{Test-Path (Join-Path $_.FullName 'apache\bin\httpd.exe')}|Select-Object -First 1
-    if(!$candidate){throw 'Bundled Windows runtime is invalid.'}
-    if($candidate.FullName -ne $xamppDir){Move-Item -LiteralPath $candidate.FullName -Destination $xamppDir -Force}
-    Push-Location $xamppDir
-    try{Invoke-Native (Join-Path $xamppDir 'php\php.exe') @('-n','-d','output_buffering=0','-q','install\install.php','usb')}finally{Pop-Location}
-}
+Expand-Archive -LiteralPath $phpZip.FullName -DestinationPath $phpDir -Force
+Expand-Archive -LiteralPath $caddyZip.FullName -DestinationPath $caddyDir -Force
 
 $appDir=Join-Path $installDir 'app'
 New-Item -ItemType Directory -Force $appDir|Out-Null
@@ -83,117 +93,121 @@ Ensure-Junction (Join-Path $appDir 'storage') $storageDir
 New-Item -ItemType Directory -Force (Join-Path $appDir 'public')|Out-Null
 Ensure-Junction (Join-Path $appDir 'public\uploads') $uploadsDir
 foreach($folder in @('logs','sessions')){New-Item -ItemType Directory -Force (Join-Path $storageDir $folder)|Out-Null}
-foreach($folder in @('header','media\playlist','notifications')){New-Item -ItemType Directory -Force (Join-Path $uploadsDir $folder)|Out-Null}
-
-$runtimeDatabase=Join-Path $xamppDir 'mysql\data'
-$databaseExists=(Test-Path $databaseDir) -and (Get-ChildItem $databaseDir -Force -ErrorAction SilentlyContinue|Measure-Object).Count -gt 0
-if(!$databaseExists){
-    New-Item -ItemType Directory -Force $databaseDir|Out-Null
-    if(Test-Path $runtimeDatabase){Copy-Item "$runtimeDatabase\*" $databaseDir -Recurse -Force}
-}
-Ensure-Junction $runtimeDatabase $databaseDir $databaseExists
+foreach($folder in @('header','media\playlist','notifications','speech')){New-Item -ItemType Directory -Force (Join-Path $uploadsDir $folder)|Out-Null}
 
 if(!$serverIp -or $serverIp -eq 'auto'){
     $serverIp=Get-NetIPAddress -AddressFamily IPv4|Where-Object{$_.IPAddress -notlike '127.*' -and $_.IPAddress -notlike '169.254.*' -and $_.InterfaceAlias -notmatch 'Loopback'}|Sort-Object InterfaceMetric|Select-Object -ExpandProperty IPAddress -First 1
 }
 if(!$serverIp){$serverIp='127.0.0.1'}
-$appUrl="http://${serverIp}:$port"
-$databasePort=3307
+$localUrl="http://localhost:$port"
+$networkUrl="http://${serverIp}:$port"
+$appUrl=$localUrl
+$databaseFile=Join-Path $databaseDir 'reka-queue.sqlite'
 $envStore=Join-Path $configDir '.env'
-$fresh=!(Test-Path (Join-Path $installDir 'installation.txt'))
+$fresh=!(Test-Path $databaseFile)
 if($fresh){
     if($adminPassword.Length -lt 10){throw 'Administrator password must contain at least 10 characters.'}
-    $dbPassword=Random-Secret 28;$displayKey=Random-Secret 32;$onlineKey=Random-Secret 40
+    $displayKey=Random-Secret 32;$onlineKey=Random-Secret 40
     $envText=@"
 APP_NAME="Reka Queue Management"
 APP_ENV=production
 APP_DEBUG=false
 APP_URL=$appUrl
 APP_TIMEZONE=Asia/Jakarta
-DB_HOST=127.0.0.1
-DB_PORT=$databasePort
-DB_DATABASE=reka_queue
-DB_USERNAME=reka_queue
-DB_PASSWORD=$dbPassword
+DB_CONNECTION=sqlite
+DB_DATABASE=$databaseFile
 SESSION_SECURE=false
 DISPLAY_ACCESS_KEY=$displayKey
 ONLINE_API_KEY=$onlineKey
 "@
     [IO.File]::WriteAllText($envStore,$envText,[Text.UTF8Encoding]::new($false))
 }else{
+    if(!(Test-Path $envStore)){throw 'Existing database configuration is missing. Installation stopped to protect data.'}
     $existingEnv=[IO.File]::ReadAllText($envStore)
-    if($existingEnv -match '(?m)^APP_URL='){$existingEnv=[Text.RegularExpressions.Regex]::Replace($existingEnv,'(?m)^APP_URL=.*$',"APP_URL=$appUrl")}
-    else{$existingEnv+="`r`nAPP_URL=$appUrl`r`n"}
+    $existingEnv=[Text.RegularExpressions.Regex]::Replace($existingEnv,'(?m)^APP_URL=.*$',"APP_URL=$appUrl")
     [IO.File]::WriteAllText($envStore,$existingEnv,[Text.UTF8Encoding]::new($false))
 }
 Copy-Item $envStore (Join-Path $appDir '.env') -Force
 $envValues=Read-Ini $envStore
-$databasePort=[int]$envValues.DB_PORT
 $displayKey=$envValues.DISPLAY_ACCESS_KEY
 
-$apacheConf=Join-Path $xamppDir 'apache\conf\httpd.conf'
-$rekaConf=Join-Path $xamppDir 'apache\conf\extra\reka-queue.conf'
-$myIni=Join-Path $xamppDir 'mysql\bin\my.ini'
-$myIniText=[IO.File]::ReadAllText($myIni)
-$myIniText=[Text.RegularExpressions.Regex]::Replace($myIniText,'(?m)^\s*port\s*=\s*\d+\s*$',"port=$databasePort")
-[IO.File]::WriteAllText($myIni,$myIniText,[Text.UTF8Encoding]::new($false))
-$apacheText=[IO.File]::ReadAllText($apacheConf)
-# The portable XAMPP configuration also listens on port 80. Reka Queue owns only
-# the port selected in the setup wizard, so disable that default listener.
-$apacheText=[Text.RegularExpressions.Regex]::Replace($apacheText,'(?m)^\s*Listen\s+80\s*$','# Disabled by Reka Queue: Listen 80')
-[IO.File]::WriteAllText($apacheConf,$apacheText,[Text.UTF8Encoding]::new($false))
-$appPublic=(Join-Path $appDir 'public').Replace('\','/')
-$vhost=@"
-Listen $port
-<VirtualHost *:$port>
-    ServerName reka-queue.local
-    DocumentRoot "$appPublic"
-    <Directory "$appPublic">
-        Options -Indexes +FollowSymLinks
-        AllowOverride All
-        Require all granted
-    </Directory>
-    ErrorLog "logs/reka-queue-error.log"
-    CustomLog "logs/reka-queue-access.log" common
-</VirtualHost>
+$phpIni=Join-Path $phpDir 'php.ini'
+Copy-Item (Join-Path $phpDir 'php.ini-production') $phpIni -Force
+$phpExt=(Join-Path $phpDir 'ext').Replace('\','/')
+$phpSettings=@"
+
+; Reka Queue managed settings
+extension_dir="$phpExt"
+extension=curl
+extension=fileinfo
+extension=mbstring
+extension=openssl
+extension=pdo_sqlite
+extension=sqlite3
+upload_max_filesize=512M
+post_max_size=520M
+max_execution_time=300
+date.timezone=Asia/Jakarta
+expose_php=Off
+session.cookie_httponly=1
 "@
-[IO.File]::WriteAllText($rekaConf,$vhost,[Text.UTF8Encoding]::new($false))
-$includeLine='Include conf/extra/reka-queue.conf'
-if(!(Select-String -Path $apacheConf -SimpleMatch $includeLine -Quiet)){Add-Content $apacheConf "`r`n$includeLine"}
-$phpIni=Join-Path $xamppDir 'php\php.ini'
-if(!(Select-String -Path $phpIni -SimpleMatch '; Reka Queue managed settings' -Quiet)){Add-Content $phpIni "`r`n; Reka Queue managed settings`r`nupload_max_filesize=512M`r`npost_max_size=520M`r`nmax_execution_time=300`r`ndate.timezone=Asia/Jakarta`r`n"}
+Add-Content -LiteralPath $phpIni -Value $phpSettings -Encoding UTF8
 
-$apacheService='RekaQueueApache';$databaseService='RekaQueueMariaDB'
-$mysqld=Join-Path $xamppDir 'mysql\bin\mysqld.exe'
-# Register MariaDB through Windows rather than `mysqld --install`. The portable
-# XAMPP build can reject self-registration on otherwise supported Windows PCs.
-$databaseCommand="`"$mysqld`" --defaults-file=`"$myIni`" --standalone"
-if(Get-Service $databaseService -ErrorAction SilentlyContinue){
-    Stop-Service $databaseService -Force -ErrorAction SilentlyContinue
-    & sc.exe config $databaseService 'binPath=' $databaseCommand 'start=' 'auto'|Out-Null
-    if($LASTEXITCODE -ne 0){throw "Unable to update the MariaDB Windows service ($LASTEXITCODE)."}
-}else{
-    New-Service -Name $databaseService -BinaryPathName $databaseCommand -DisplayName 'Reka Queue MariaDB' -Description 'Local database for Reka Queue Management' -StartupType Automatic|Out-Null
+$phpPort=19070
+$caddyFile=Join-Path $caddyDir 'Caddyfile'
+$publicPath=(Join-Path $appDir 'public').Replace('\','/')
+$caddyConfig=@"
+:$port {
+    root * "$publicPath"
+    encode zstd gzip
+    php_fastcgi 127.0.0.1:$phpPort
+    file_server
+    header {
+        -Server
+        X-Content-Type-Options nosniff
+        X-Frame-Options SAMEORIGIN
+        Referrer-Policy same-origin
+    }
+    log {
+        output file "$(($logDir+'\access.log').Replace('\','/'))" {
+            roll_size 20MiB
+            roll_keep 5
+        }
+    }
 }
-$httpd=Join-Path $xamppDir 'apache\bin\httpd.exe'
-New-Item -ItemType Directory -Force (Join-Path $xamppDir 'apache\logs')|Out-Null
-Invoke-Native $httpd @('-t','-f',$apacheConf)
-if(!(Get-Service $apacheService -ErrorAction SilentlyContinue)){Invoke-Native $httpd @('-k','install','-n',$apacheService,'-f',$apacheConf)}
-sc.exe config $databaseService start= auto|Out-Null
-sc.exe config $apacheService start= auto|Out-Null
-Start-Service $databaseService -ErrorAction SilentlyContinue
-$deadline=(Get-Date).AddSeconds(30);$mysql=Join-Path $xamppDir 'mysql\bin\mysql.exe'
-do{Start-Sleep -Milliseconds 800;& $mysql -u root --execute='SELECT 1' 2>$null;if($LASTEXITCODE -eq 0){break}}while((Get-Date)-lt $deadline)
-if($LASTEXITCODE -ne 0){throw 'MariaDB did not become ready.'}
+"@
+[IO.File]::WriteAllText($caddyFile,$caddyConfig,[Text.UTF8Encoding]::new($false))
+Invoke-Native (Join-Path $caddyDir 'caddy.exe') @('validate','--config',$caddyFile,'--adapter','caddyfile')
 
-if($fresh){
-    $dbName='reka_queue';$dbUser='reka_queue';$dbPass=Escape-Sql $envValues.DB_PASSWORD
-    $sql="CREATE DATABASE IF NOT EXISTS ``$dbName`` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; CREATE USER IF NOT EXISTS '$dbUser'@'localhost' IDENTIFIED BY '$dbPass'; CREATE USER IF NOT EXISTS '$dbUser'@'127.0.0.1' IDENTIFIED BY '$dbPass'; ALTER USER '$dbUser'@'localhost' IDENTIFIED BY '$dbPass'; ALTER USER '$dbUser'@'127.0.0.1' IDENTIFIED BY '$dbPass'; GRANT ALL PRIVILEGES ON ``$dbName``.* TO '$dbUser'@'localhost'; GRANT ALL PRIVILEGES ON ``$dbName``.* TO '$dbUser'@'127.0.0.1'; FLUSH PRIVILEGES;"
-    Invoke-Native $mysql @('-u','root',"--execute=$sql")
-    $env:LIVE_ADMIN_PASSWORD=$adminPassword;$env:ADMIN_NAME=$adminName;$env:ADMIN_USERNAME=$adminUsername
+$phpService=Join-Path $serviceDir 'RekaQueuePHP.exe'
+$webService=Join-Path $serviceDir 'RekaQueueWeb.exe'
+Copy-Item $winsw $phpService -Force;Copy-Item $winsw $webService -Force
+$phpExe=(Join-Path $phpDir 'php-cgi.exe')
+$phpExeXml=Escape-Xml $phpExe;$phpIniXml=Escape-Xml $phpIni;$appDirXml=Escape-Xml $appDir
+$caddyExeXml=Escape-Xml (Join-Path $caddyDir 'caddy.exe');$caddyFileXml=Escape-Xml $caddyFile;$caddyDirXml=Escape-Xml $caddyDir;$logDirXml=Escape-Xml $logDir
+$phpXml=@"
+<service><id>RekaQueuePHP</id><name>Reka Queue PHP</name><description>PHP FastCGI runtime for Reka Queue Management</description><executable>$phpExeXml</executable><arguments>-b 127.0.0.1:$phpPort -c &quot;$phpIniXml&quot;</arguments><workingdirectory>$appDirXml</workingdirectory><env name="PHP_FCGI_CHILDREN" value="4"/><env name="PHP_FCGI_MAX_REQUESTS" value="500"/><startmode>Automatic</startmode><onfailure action="restart" delay="5 sec"/><resetfailure>1 hour</resetfailure><logpath>$logDirXml</logpath><log mode="roll-by-size"><sizeThreshold>10240</sizeThreshold><keepFiles>5</keepFiles></log></service>
+"@
+$webXml=@"
+<service><id>RekaQueueWeb</id><name>Reka Queue Web Server</name><description>Caddy web server for Reka Queue Management</description><executable>$caddyExeXml</executable><arguments>run --config &quot;$caddyFileXml&quot; --adapter caddyfile</arguments><workingdirectory>$caddyDirXml</workingdirectory><startmode>Automatic</startmode><depend>RekaQueuePHP</depend><stopexecutable>$caddyExeXml</stopexecutable><stoparguments>stop --address localhost:2019</stoparguments><onfailure action="restart" delay="5 sec"/><resetfailure>1 hour</resetfailure><logpath>$logDirXml</logpath><log mode="roll-by-size"><sizeThreshold>10240</sizeThreshold><keepFiles>5</keepFiles></log></service>
+"@
+[IO.File]::WriteAllText((Join-Path $serviceDir 'RekaQueuePHP.xml'),$phpXml,[Text.UTF8Encoding]::new($false))
+[IO.File]::WriteAllText((Join-Path $serviceDir 'RekaQueueWeb.xml'),$webXml,[Text.UTF8Encoding]::new($false))
+
+if($fresh){$env:LIVE_ADMIN_PASSWORD=$adminPassword;$env:ADMIN_NAME=$adminName;$env:ADMIN_USERNAME=$adminUsername}
+try{Invoke-Native (Join-Path $phpDir 'php.exe') @(Join-Path $appDir 'bin\install-live.php')}finally{Remove-Item Env:LIVE_ADMIN_PASSWORD -ErrorAction SilentlyContinue;Remove-Item Env:ADMIN_NAME -ErrorAction SilentlyContinue;Remove-Item Env:ADMIN_USERNAME -ErrorAction SilentlyContinue}
+
+Remove-ServiceWrapper $webService;Remove-ServiceWrapper $phpService
+Invoke-Native $phpService @('install');Invoke-Native $webService @('install')
+Invoke-Native $phpService @('start');Invoke-Native $webService @('start')
+
+$healthUrl="http://127.0.0.1:$port/login"
+$ready=$false
+for($attempt=0;$attempt -lt 30;$attempt++){
+    try{$response=Invoke-WebRequest -UseBasicParsing -Uri $healthUrl -TimeoutSec 3;if($response.StatusCode -eq 200){$ready=$true;break}}catch{}
+    Start-Sleep -Seconds 1
 }
-try{Invoke-Native (Join-Path $xamppDir 'php\php.exe') @(Join-Path $appDir 'bin\install-live.php')}finally{Remove-Item Env:LIVE_ADMIN_PASSWORD -ErrorAction SilentlyContinue;Remove-Item Env:ADMIN_NAME -ErrorAction SilentlyContinue;Remove-Item Env:ADMIN_USERNAME -ErrorAction SilentlyContinue}
-Restart-Service $apacheService -ErrorAction Stop
+if(!$ready){Remove-ServiceWrapper $webService;Remove-ServiceWrapper $phpService;throw 'The local web health check failed. Services were rolled back.'}
 
 netsh advfirewall firewall delete rule name="Reka Queue Server"|Out-Null
 netsh advfirewall firewall add rule name="Reka Queue Server" dir=in action=allow protocol=TCP localport=$port|Out-Null
@@ -204,8 +218,8 @@ schtasks /Create /TN "Reka Queue Daily Backup" /SC DAILY /ST 23:30 /TR $taskComm
 
 $desktop=[Environment]::GetFolderPath('CommonDesktopDirectory');$programs=Join-Path $env:ProgramData 'Microsoft\Windows\Start Menu\Programs\Reka Queue'
 New-Item -ItemType Directory -Force $programs|Out-Null
-$shortcuts=@{'Reka Queue Admin.url'="$appUrl/dashboard";'Reka Queue Kiosk.url'="$appUrl/kiosk";'Reka Queue Display.url'="$appUrl/display?key=$displayKey&fullscreen=1"}
-foreach($shortcut in $shortcuts.GetEnumerator()){$text="[InternetShortcut]`r`nURL=$($shortcut.Value)`r`n";[IO.File]::WriteAllText((Join-Path $desktop $shortcut.Key),$text,[Text.UTF8Encoding]::new($false));[IO.File]::WriteAllText((Join-Path $programs $shortcut.Key),$text,[Text.UTF8Encoding]::new($false))}
-[IO.File]::WriteAllText((Join-Path $installDir 'installation.txt'),"URL=$appUrl`r`nRuntime=$xamppDir`r`nData=$dataDir`r`nInstalled=$(Get-Date -Format s)`r`n",[Text.UTF8Encoding]::new($false))
+$shortcuts=@{'Reka Queue Admin.url'="$localUrl/dashboard";'Reka Queue Kiosk.url'="$localUrl/kiosk";'Reka Queue Display.url'="$localUrl/display?key=$displayKey&fullscreen=1"}
+foreach($shortcut in $shortcuts.GetEnumerator()){$text="[InternetShortcut]`r`nURL=$($shortcut.Value)`r`nIconFile=$iconFile`r`nIconIndex=0`r`n";[IO.File]::WriteAllText((Join-Path $desktop $shortcut.Key),$text,[Text.UTF8Encoding]::new($false));[IO.File]::WriteAllText((Join-Path $programs $shortcut.Key),$text,[Text.UTF8Encoding]::new($false))}
+[IO.File]::WriteAllText((Join-Path $installDir 'installation.txt'),"URL=$localUrl`r`nNETWORK_URL=$networkUrl`r`nRuntime=PHP+Caddy`r`nDatabase=$databaseFile`r`nData=$dataDir`r`nInstalled=$(Get-Date -Format s)`r`n",[Text.UTF8Encoding]::new($false))
 Remove-Item -LiteralPath $OptionsFile -Force -ErrorAction SilentlyContinue
-Write-Output "READY_URL=$appUrl"
+Write-Output "READY_URL=$localUrl"

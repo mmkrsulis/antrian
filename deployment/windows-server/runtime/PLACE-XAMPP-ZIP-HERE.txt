@@ -1,2 +1,0 @@
-For a fully offline installer, place the official XAMPP Windows portable ZIP in this folder before running build-windows-server-package.sh.
-

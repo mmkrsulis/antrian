@@ -14,7 +14,7 @@ $active=static fn(string $path): string => $currentPath===$path?' active':'';
             <p>UTAMA</p>
             <a class="<?=$active('/dashboard')?>" href="/dashboard"><span>⌂</span>Dashboard</a>
             <a class="<?=$active('/operator')?>" href="/operator"><span>◉</span>Konsol Operator</a>
-            <a href="/display?key=<?=e(env('DISPLAY_ACCESS_KEY'))?>&fullscreen=1" target="_blank"><span>▣</span>Buka Display</a>
+            <?php if($isAdmin):?><a href="/operator/display?scope=all&fullscreen=1" target="_blank"><span>▣</span>Display Semua Layanan</a><?php else:?><a href="/operator/display?scope=mine&fullscreen=1" target="_blank"><span>▣</span>Display Layanan Saya</a><a href="/operator/display?scope=all&fullscreen=1" target="_blank"><span>□</span>Display Semua Layanan</a><?php endif?>
             <?php if(!$isAdmin):?><a class="<?=$active('/operator/apps')?>" href="/operator/apps"><span>⇩</span>Aplikasi Client</a><?php endif?>
             <a class="<?=$active('/admin/sub-services')?>" href="/admin/sub-services"><span>≡</span>Sublayanan</a>
             <?php if($isAdmin):?>

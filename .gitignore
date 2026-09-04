@@ -3,6 +3,7 @@
 !.env.example
 storage/logs/*.log
 storage/install.lock
+storage/backups/
 storage/sessions/*
 !storage/sessions/.gitkeep
 release/*.zip
@@ -20,9 +21,12 @@ public/uploads/speech/*
 deployment/windows/notifier/*.o
 deployment/android/notifier/reka-release.keystore
 deployment/android/notifier/build/
+*.idsig
 deployment/RekaQueueServerSetup.exe
 deployment/windows-server/RekaQueueServerSetup.exe
 deployment/windows-server/runtime/*.zip
 deployment/windows-server/runtime/vc_redist.x64.exe
+deployment/windows-server/runtime/native/*
+!deployment/windows-server/runtime/native/.gitkeep
 __pycache__/
 *.pyc

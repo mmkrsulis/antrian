@@ -2,7 +2,7 @@ param([Parameter(Mandatory=$true)][string]$InstallDir,[switch]$RemoveData)
 $ErrorActionPreference='SilentlyContinue'
 $dataDir=Join-Path $env:ProgramData 'Reka Queue'
 if(Test-Path (Join-Path $InstallDir 'tools\backup.ps1')){& (Join-Path $InstallDir 'tools\backup.ps1') -InstallDir $InstallDir}
-foreach($service in @('RekaQueueApache','RekaQueueMariaDB')){Stop-Service $service -Force;sc.exe delete $service|Out-Null}
+foreach($wrapper in @('RekaQueueWeb.exe','RekaQueuePHP.exe')){$exe=Join-Path $InstallDir "runtime\services\$wrapper";if(Test-Path $exe){& $exe stop;& $exe uninstall}}
 schtasks /Delete /TN "Reka Queue Daily Backup" /F|Out-Null
 netsh advfirewall firewall delete rule name="Reka Queue Server"|Out-Null
 $desktop=[Environment]::GetFolderPath('CommonDesktopDirectory')

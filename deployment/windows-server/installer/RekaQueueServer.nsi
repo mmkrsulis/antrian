@@ -10,7 +10,7 @@ CRCCheck on
 !include "WinMessages.nsh"
 
 !define PRODUCT_NAME "Reka Queue Server"
-!define PRODUCT_VERSION "1.0.3"
+!define PRODUCT_VERSION "2.1.0"
 !define COMPANY_NAME "rekakarsa"
 !define UNINSTALL_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\RekaQueueServer"
 !define REPO_ROOT "..\..\.."
@@ -36,8 +36,8 @@ Var KeepDataCheckbox
 Var KeepData
 
 !define MUI_ABORTWARNING
-!define MUI_ICON "${NSISDIR}\Contrib\Graphics\Icons\modern-install.ico"
-!define MUI_UNICON "${NSISDIR}\Contrib\Graphics\Icons\modern-uninstall.ico"
+!define MUI_ICON "..\assets\reka-queue.ico"
+!define MUI_UNICON "..\assets\reka-queue.ico"
 !define MUI_FINISHPAGE_RUN "$INSTDIR\Open-RekaQueue.cmd"
 !define MUI_FINISHPAGE_RUN_TEXT "Open Reka Queue administrator dashboard"
 !insertmacro MUI_PAGE_WELCOME
@@ -139,13 +139,29 @@ Section "Reka Queue Server" SecMain
     File /r "${REPO_ROOT}\database"
     File /r /x uploads "${REPO_ROOT}\public"
     File "${REPO_ROOT}\.env.example"
+    SetOutPath "$PLUGINSDIR\reka-bundle\payload\app\deployment"
+    File "${REPO_ROOT}\deployment\RekaQueueNotifierSetup.exe"
+    File "${REPO_ROOT}\deployment\RekaQueueNotifier.apk"
+    File "${REPO_ROOT}\deployment\reka-queue-notifier-linux.deb"
+    File "${REPO_ROOT}\deployment\reka-operator-client.zip"
+    File "${REPO_ROOT}\deployment\reka-display-client.zip"
+    File "${REPO_ROOT}\deployment\reka-display-startup.zip"
+    File "${REPO_ROOT}\deployment\reka-kiosk-printer.zip"
+    File "${REPO_ROOT}\deployment\reka-queue-windows-startup.zip"
+    File "${REPO_ROOT}\deployment\reka-windows-notifier.zip"
+    File "${REPO_ROOT}\deployment\reka-queue-online-wordpress.zip"
     SetOutPath "$PLUGINSDIR\reka-bundle\runtime"
-    File "..\runtime\xampp-portable-windows-x64-8.2.12-0-VS16.zip"
+    File "..\runtime\native\php-8.4.24-nts-Win32-vs17-x64.zip"
+    File "..\runtime\native\caddy_2.11.4_windows_amd64.zip"
+    File "..\runtime\native\WinSW-x64.exe"
     File "..\runtime\vc_redist.x64.exe"
     SetOutPath "$PLUGINSDIR\reka-bundle\scripts"
     File "..\scripts\install.ps1"
     File "..\scripts\backup.ps1"
     File "..\scripts\uninstall.ps1"
+    SetOutPath "$PLUGINSDIR\reka-bundle\assets"
+    File "..\assets\reka-queue.ico"
+    File "..\assets\reka-queue.png"
 
     FileOpen $0 "$PLUGINSDIR\reka-options.ini" w
     FileWrite $0 "[INSTALL]$\r$\n"
@@ -165,6 +181,11 @@ Section "Reka Queue Server" SecMain
         Abort
     ${EndIf}
 
+    ; Keep a copy of this exact server installer in the installed download center.
+    ; It cannot be embedded into itself, so copy the running setup after payload installation.
+    CreateDirectory "$INSTDIR\app\deployment"
+    CopyFiles /SILENT "$EXEPATH" "$INSTDIR\app\deployment\RekaQueueServerSetup.exe"
+
     SetOutPath "$INSTDIR"
     FileOpen $0 "$INSTDIR\Open-RekaQueue.cmd" w
     FileWrite $0 '@echo off$\r$\n'
@@ -175,7 +196,7 @@ Section "Reka Queue Server" SecMain
     WriteRegStr HKLM "${UNINSTALL_KEY}" "DisplayName" "${PRODUCT_NAME}"
     WriteRegStr HKLM "${UNINSTALL_KEY}" "DisplayVersion" "${PRODUCT_VERSION}"
     WriteRegStr HKLM "${UNINSTALL_KEY}" "Publisher" "${COMPANY_NAME}"
-    WriteRegStr HKLM "${UNINSTALL_KEY}" "DisplayIcon" "$INSTDIR\Uninstall.exe"
+    WriteRegStr HKLM "${UNINSTALL_KEY}" "DisplayIcon" "$INSTDIR\assets\reka-queue.ico"
     WriteRegStr HKLM "${UNINSTALL_KEY}" "UninstallString" '"$INSTDIR\Uninstall.exe"'
     WriteRegStr HKLM "${UNINSTALL_KEY}" "QuietUninstallString" '"$INSTDIR\Uninstall.exe" /S'
     WriteRegDWORD HKLM "${UNINSTALL_KEY}" "NoModify" 1

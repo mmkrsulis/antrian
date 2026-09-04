@@ -9,12 +9,12 @@ RequestExecutionLevel user
 SetCompressor /SOLID lzma
 BrandingText "rekakarsa · Sulis Setiyawan"
 
-VIProductVersion "1.4.1.0"
+VIProductVersion "1.5.0.0"
 VIAddVersionKey "ProductName" "Reka Queue Notifier"
 VIAddVersionKey "CompanyName" "rekakarsa"
 VIAddVersionKey "FileDescription" "Reka Queue Notifier Installer"
-VIAddVersionKey "FileVersion" "1.4.1"
-VIAddVersionKey "ProductVersion" "1.4.1"
+VIAddVersionKey "FileVersion" "1.5.0"
+VIAddVersionKey "ProductVersion" "1.5.0"
 VIAddVersionKey "LegalCopyright" "Created by Sulis Setiyawan"
 
 !define MUI_ABORTWARNING
@@ -48,7 +48,7 @@ Section "Reka Queue Notifier" SEC_MAIN
  CreateShortcut "$SMPROGRAMS\Reka Queue Notifier\Reka Queue Notifier.lnk" "$INSTDIR\RekaQueueNotifier.exe"
  CreateShortcut "$SMPROGRAMS\Reka Queue Notifier\Uninstall.lnk" "$INSTDIR\Uninstall.exe"
  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\RekaQueueNotifier" "DisplayName" "Reka Queue Notifier"
- WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\RekaQueueNotifier" "DisplayVersion" "1.4.1"
+ WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\RekaQueueNotifier" "DisplayVersion" "1.5.0"
  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\RekaQueueNotifier" "Publisher" "Sulis Setiyawan - rekakarsa"
  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\RekaQueueNotifier" "DisplayIcon" "$INSTDIR\RekaQueueNotifier.exe"
  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\RekaQueueNotifier" "InstallLocation" "$INSTDIR"
@@ -61,8 +61,15 @@ SectionEnd
 
 Section "Uninstall"
  SetShellVarContext current
- ExecWait 'taskkill /IM RekaQueueNotifier.exe /F'
+ SetRegView 32
  DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "RekaQueueNotifier"
+ SetRegView 64
+ DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "RekaQueueNotifier"
+ SetRegView 32
+ Delete "$SMSTARTUP\Reka Queue Notifier.lnk"
+ Delete "$SMSTARTUP\RekaQueueNotifier.lnk"
+ ExecWait 'taskkill /IM RekaQueueNotifier.exe /F'
+ Sleep 1000
  DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\RekaQueueNotifier"
  DeleteRegKey HKCU "Software\RekaQueueNotifier"
  Delete "$SMPROGRAMS\Reka Queue Notifier\Reka Queue Notifier.lnk"

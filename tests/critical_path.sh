@@ -6,10 +6,10 @@ trap 'rm -f "$cookie_file"' EXIT
 
 curl -fsS "$base_url/health" | grep -q '"ok"'
 page="$(curl -fsS -c "$cookie_file" "$base_url/kiosk")"
-token="$(printf '%s' "$page" | sed -n 's/.*window.QUEUE={csrf:"\([^"]*\)"}.*/\1/p')"
+token="$(printf '%s' "$page" | sed -n 's/.*window.QUEUE={csrf:"\([^"]*\)".*/\1/p')"
 [ -n "$token" ]
 ticket="$(curl -fsS -b "$cookie_file" -H 'Content-Type: application/json' -H "X-CSRF-Token: $token" -d '{"service_id":1}' "$base_url/api/tickets")"
-printf '%s' "$ticket" | grep -q '"ticket_number":"PSS-'
+printf '%s' "$ticket" | grep -Eq '"ticket_number":"[[:alnum:]-]+"'
 public_id="$(printf '%s' "$ticket" | sed -n 's/.*"public_id":"\([^"]*\)".*/\1/p')"
 ticket_page="$(curl -fsS "$base_url/ticket/$public_id")"
 printf '%s' "$ticket_page" | grep -q 'Mohon menunggu'

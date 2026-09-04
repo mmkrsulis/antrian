@@ -4,7 +4,8 @@ require dirname(__DIR__) . '/bootstrap/app.php';
 use App\Core\Database;
 
 $db=Database::connection();
-foreach (glob(dirname(__DIR__).'/database/migrations/*.sql') as $file) $db->exec(file_get_contents($file));
+$migrationDir=$db->isSqlite()?dirname(__DIR__).'/database/sqlite':dirname(__DIR__).'/database/migrations';
+foreach (glob($migrationDir.'/*.sql') as $file) $db->exec(file_get_contents($file));
 foreach (glob(dirname(__DIR__).'/database/seeds/*.sql') as $file) $db->exec(file_get_contents($file));
 $password=(string)(getenv('LIVE_ADMIN_PASSWORD')?:'');
 if($password!==''){

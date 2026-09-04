@@ -1,5 +1,9 @@
 # Online registration API
 
+This focused guide is complemented by the complete
+[centralized API reference](api-reference.md), which also covers kiosk,
+operator, display, and native-client endpoints.
+
 The module supports a native form at `/online-registration` and external PHP/WordPress websites through JSON REST endpoints. External clients must send `X-API-Key` on every request. Set a strong `ONLINE_API_KEY` in `.env`; do not expose it in browser JavaScript. Calls should be made by the website server.
 
 ## Lifecycle

@@ -229,6 +229,10 @@
   font-size: clamp(.9rem, 4.5cqw, 2rem);
 }
 .service-column,.display-service,.display-service>div,.display-service>div span { min-width: 0; }
+.service-column {
+  grid-template-rows: repeat(var(--service-count, 5), minmax(0, 1fr));
+  grid-auto-rows: unset;
+}
 .display-service {
   overflow: hidden;
   grid-template-rows: clamp(32px, 4vh, 42px) minmax(0, 1fr) clamp(24px, 2.8vh, 30px);
