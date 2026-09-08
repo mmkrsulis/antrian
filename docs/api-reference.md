@@ -15,6 +15,7 @@ send `Content-Type: application/json`, unless an endpoint explicitly requires
 | Operator | `/api/operator` | Authenticated operator web interface | Application API |
 | Display | `/api/display` | Public-key or authenticated display | Application API |
 | Admin | `/api/admin` | Authenticated administration interface | Internal API |
+| Operator chat | `/api/chat` | Authenticated admin and operator interface | Internal API |
 
 External integrations should use only `/api/public/*`. The other surfaces may
 change together with official clients and are documented here for maintenance,
@@ -66,6 +67,17 @@ Common status codes:
 Never place `ONLINE_API_KEY`, a device token, or `DISPLAY_ACCESS_KEY` in a
 public repository. The online API key must be used by the integrating website's
 server, not by browser JavaScript.
+
+## Internal operator chat
+
+Chat is available only to authenticated `super_admin`, `admin`, and `operator`
+web sessions. It is intentionally not loaded by the kiosk or display pages.
+
+- `GET /api/chat/messages?after={message_id}` retrieves new messages and the unread count.
+- `POST /api/chat/messages` sends a message of at most 1000 characters.
+- `POST /api/chat/read` records the latest message read by the current user.
+
+The two POST endpoints require the session CSRF token through `X-CSRF-Token`.
 
 ## Public integration API
 

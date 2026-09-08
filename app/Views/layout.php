@@ -4,7 +4,7 @@ $layoutUser=\App\Core\Auth::user();
 $isAdmin=$layoutUser&&in_array($layoutUser['role'],['super_admin','admin'],true);
 $active=static fn(string $path): string => $currentPath===$path?' active':'';
 ?>
-<!doctype html><html lang="id" translate="no" class="notranslate"><head><meta charset="utf-8"><meta name="google" content="notranslate"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?=e(app_name())?></title><link rel="stylesheet" href="/assets/app.css?v=<?=e((string)filemtime(__DIR__.'/../../public/assets/app.css'))?>"><link rel="stylesheet" href="/assets/creator-credit.css?v=<?=e((string)filemtime(__DIR__.'/../../public/assets/creator-credit.css'))?>"><link rel="stylesheet" href="/assets/admin-shell.css?v=<?=e((string)filemtime(__DIR__.'/../../public/assets/admin-shell.css'))?>"><style><?=theme_css_vars()?></style></head><body class="admin-shell">
+<!doctype html><html lang="id" translate="no" class="notranslate"><head><meta charset="utf-8"><meta name="google" content="notranslate"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?=e(app_name())?></title><link rel="stylesheet" href="/assets/app.css?v=<?=e((string)filemtime(__DIR__.'/../../public/assets/app.css'))?>"><link rel="stylesheet" href="/assets/creator-credit.css?v=<?=e((string)filemtime(__DIR__.'/../../public/assets/creator-credit.css'))?>"><link rel="stylesheet" href="/assets/admin-shell.css?v=<?=e((string)filemtime(__DIR__.'/../../public/assets/admin-shell.css'))?>"><?php if($layoutUser):?><link rel="stylesheet" href="/assets/chat.css?v=<?=e((string)filemtime(__DIR__.'/../../public/assets/chat.css'))?>"><?php endif?><style><?=theme_css_vars()?></style></head><body class="admin-shell">
 <?php if($layoutUser):?>
 <div class="admin-layout">
     <button class="admin-menu-toggle" type="button" aria-label="Buka menu" aria-expanded="false"><span></span><span></span><span></span></button><div class="admin-sidebar-backdrop"></div>
@@ -32,7 +32,7 @@ $active=static fn(string $path): string => $currentPath===$path?' active':'';
         <div class="admin-sidebar-user"><div><b><?=e($layoutUser['name'])?></b><small><?=e(ucwords(str_replace('_',' ',$layoutUser['role'])))?></small></div><form method="post" action="/logout"><input type="hidden" name="_csrf" value="<?=csrf_token()?>"><button type="submit" title="Keluar">↪</button></form></div>
     </aside>
     <div class="admin-workspace"><main class="container admin-content"><?=$content?></main><footer class="creator-credit">Created by Sulis Setiyawan — rekakarsa</footer></div>
-</div>
+</div><?php $chatUser=$layoutUser;require __DIR__.'/chat-widget.php';?>
 <script>document.addEventListener('DOMContentLoaded',()=>{const body=document.body,toggle=document.querySelector('.admin-menu-toggle'),backdrop=document.querySelector('.admin-sidebar-backdrop'),sidebar=document.querySelector('.admin-sidebar');if(!toggle)return;const close=()=>{body.classList.remove('admin-menu-open');toggle.setAttribute('aria-expanded','false')};toggle.addEventListener('click',()=>{const open=body.classList.toggle('admin-menu-open');toggle.setAttribute('aria-expanded',String(open))});backdrop.addEventListener('click',close);sidebar.querySelectorAll('a').forEach(link=>link.addEventListener('click',close));addEventListener('keydown',event=>{if(event.key==='Escape')close()})});</script>
 <?php else:?><main class="container"><?=$content?></main><footer class="creator-credit">Created by Sulis Setiyawan — rekakarsa</footer><?php endif?>
 </body></html>

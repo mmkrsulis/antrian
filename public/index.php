@@ -16,6 +16,7 @@ $json = static function(array $data, int $status=200): never { http_response_cod
 $redirect = static function(string $to): never { header("Location: {$to}"); exit; };
 $input = static function(): array { $raw=json_decode(file_get_contents('php://input'),true); return is_array($raw)?$raw:$_POST; };
 $csrf = static function(array $data) use ($json): void { if (!hash_equals(csrf_token(), (string)($data['_csrf'] ?? ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')))) $json(['error'=>'Token keamanan tidak valid.'],419); };
+$chatAuth = static function() use ($json): array { $user=Auth::user();if(!$user)$json(['error'=>'Sesi login diperlukan.'],401);if(!in_array($user['role'],['super_admin','admin','operator'],true))$json(['error'=>'Akses chat ditolak.'],403);return $user; };
 $publicApiAuth = static function() use ($json): string {
     $key=trim((string)($_SERVER['HTTP_X_API_KEY']??''));if($key==='')$json(['error'=>'X-API-Key wajib dikirim.'],401);
     $configured=(string)env('ONLINE_API_KEY','');$db=Database::connection();$client='env';$valid=$configured!==''&&hash_equals($configured,$key);
@@ -55,6 +56,25 @@ $configuredClientArchive=static function(string $source,string $serverUrl): stri
 
 try {
     if ($path === '/health') { try { Database::connection()->query('SELECT 1'); $json(['status'=>'ok']); } catch (Throwable) { $json(['status'=>'starting'],503); } }
+    if ($path === '/api/chat/messages' && $method === 'GET') {
+        $user=$chatAuth();$db=Database::connection();$after=max(0,(int)($_GET['after']??0));
+        if($after>0){$stmt=$db->prepare('SELECT id,user_id,sender_name,sender_role,body,created_at FROM chat_messages WHERE id>? ORDER BY id ASC LIMIT 100');$stmt->execute([$after]);$messages=$stmt->fetchAll();}
+        else{$messages=$db->query('SELECT id,user_id,sender_name,sender_role,body,created_at FROM chat_messages ORDER BY id DESC LIMIT 50')->fetchAll();$messages=array_reverse($messages);}
+        $read=$db->prepare('SELECT last_read_message_id FROM chat_reads WHERE user_id=?');$read->execute([$user['id']]);$lastRead=(int)($read->fetchColumn()?:0);
+        $unreadStmt=$db->prepare('SELECT COUNT(*) FROM chat_messages WHERE id>? AND (user_id IS NULL OR user_id<>?)');$unreadStmt->execute([$lastRead,$user['id']]);
+        $json(['messages'=>$messages,'unread'=>(int)$unreadStmt->fetchColumn()]);
+    }
+    if ($path === '/api/chat/messages' && $method === 'POST') {
+        $user=$chatAuth();$data=$input();$csrf($data);$body=trim((string)($data['body']??''));
+        if($body===''||mb_strlen($body)>1000)$json(['error'=>'Pesan wajib diisi dan maksimal 1000 karakter.'],422);
+        $now=microtime(true);$previous=(float)($_SESSION['chat_last_sent_at']??0);if($now-$previous<0.7)$json(['error'=>'Tunggu sebentar sebelum mengirim pesan berikutnya.'],429);$_SESSION['chat_last_sent_at']=$now;
+        $db=Database::connection();$stmt=$db->prepare('INSERT INTO chat_messages(user_id,sender_name,sender_role,body) VALUES (?,?,?,?)');$stmt->execute([$user['id'],$user['name'],$user['role'],$body]);$id=(int)$db->lastInsertId();
+        $messageStmt=$db->prepare('SELECT id,user_id,sender_name,sender_role,body,created_at FROM chat_messages WHERE id=?');$messageStmt->execute([$id]);$json(['message'=>$messageStmt->fetch()],201);
+    }
+    if ($path === '/api/chat/read' && $method === 'POST') {
+        $user=$chatAuth();$data=$input();$csrf($data);$requested=max(0,(int)($data['last_id']??0));$db=Database::connection();$latest=(int)($db->query('SELECT COALESCE(MAX(id),0) FROM chat_messages')->fetchColumn()?:0);$lastId=min($requested,$latest);
+        $stmt=$db->prepare('INSERT INTO chat_reads(user_id,last_read_message_id) VALUES (?,?) ON DUPLICATE KEY UPDATE last_read_message_id=VALUES(last_read_message_id),updated_at=NOW()');$stmt->execute([$user['id'],$lastId]);$json(['read_to'=>$lastId]);
+    }
     $downloadFiles=['/downloads/RekaQueueServerSetup.exe'=>'RekaQueueServerSetup.exe','/downloads/reka-queue-windows-startup.zip'=>'reka-queue-windows-startup.zip','/downloads/reka-display-startup.zip'=>'reka-display-startup.zip','/downloads/reka-kiosk-printer.zip'=>'reka-kiosk-printer.zip','/downloads/reka-operator-client.zip'=>'reka-operator-client.zip','/downloads/RekaQueueNotifierSetup.exe'=>'RekaQueueNotifierSetup.exe','/downloads/RekaQueueNotifier.apk'=>'RekaQueueNotifier.apk','/downloads/reka-queue-notifier-linux.deb'=>'reka-queue-notifier-linux.deb','/downloads/reka-windows-notifier.zip'=>'reka-windows-notifier.zip','/downloads/reka-display-client.zip'=>'reka-display-client.zip','/downloads/reka-queue-online-wordpress.zip'=>'reka-queue-online-wordpress.zip'];
     if (isset($downloadFiles[$path]) && in_array($method, ['GET','HEAD'], true)) {
         $downloadName=$downloadFiles[$path];$file=dirname(__DIR__).'/deployment/'.$downloadName;

@@ -1,6 +1,6 @@
 # Reka Queue Management
 
-Aplikasi antrean web berbasis PHP 8.3 dan MariaDB. Alur inti mencakup pengambilan tiket dari kiosk, pemanggilan dan pemrosesan oleh operator, display realtime dengan suara Bahasa Indonesia, administrasi layanan, dashboard, audit trail, dan laporan CSV.
+Aplikasi antrean web berbasis PHP 8.3 dan MariaDB. Alur inti mencakup pengambilan tiket dari kiosk, pemanggilan dan pemrosesan oleh operator, chat internal petugas, display realtime dengan suara Bahasa Indonesia, administrasi layanan, dashboard, audit trail, dan laporan CSV.
 
 ## Instalasi cepat dari GitHub
 
