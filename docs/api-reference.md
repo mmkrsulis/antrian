@@ -73,9 +73,16 @@ server, not by browser JavaScript.
 Chat is available only to authenticated `super_admin`, `admin`, and `operator`
 web sessions. It is intentionally not loaded by the kiosk or display pages.
 
-- `GET /api/chat/messages?after={message_id}` retrieves new messages and the unread count.
-- `POST /api/chat/messages` sends a message of at most 1000 characters.
-- `POST /api/chat/read` records the latest message read by the current user.
+- `GET /api/chat/messages?peer={user_id}&after={message_id}` retrieves a room
+  or direct conversation, the user directory, presence, and unread counts.
+- `POST /api/chat/messages` sends a message of at most 1000 characters. Set
+  `recipient_user_id` to `0` for the common room or to an active user ID for a
+  private conversation.
+- `POST /api/chat/read` records the latest message read for `peer_user_id`.
+
+Messages in the common room are visible to every authenticated staff user.
+Direct messages are returned only to their sender and recipient. Presence is
+considered online while the user's authenticated page continues polling chat.
 
 The two POST endpoints require the session CSRF token through `X-CSRF-Token`.
 

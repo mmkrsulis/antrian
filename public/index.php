@@ -57,23 +57,27 @@ $configuredClientArchive=static function(string $source,string $serverUrl): stri
 try {
     if ($path === '/health') { try { Database::connection()->query('SELECT 1'); $json(['status'=>'ok']); } catch (Throwable) { $json(['status'=>'starting'],503); } }
     if ($path === '/api/chat/messages' && $method === 'GET') {
-        $user=$chatAuth();$db=Database::connection();$after=max(0,(int)($_GET['after']??0));
-        if($after>0){$stmt=$db->prepare('SELECT id,user_id,sender_name,sender_role,body,created_at FROM chat_messages WHERE id>? ORDER BY id ASC LIMIT 100');$stmt->execute([$after]);$messages=$stmt->fetchAll();}
-        else{$messages=$db->query('SELECT id,user_id,sender_name,sender_role,body,created_at FROM chat_messages ORDER BY id DESC LIMIT 50')->fetchAll();$messages=array_reverse($messages);}
-        $read=$db->prepare('SELECT last_read_message_id FROM chat_reads WHERE user_id=?');$read->execute([$user['id']]);$lastRead=(int)($read->fetchColumn()?:0);
-        $unreadStmt=$db->prepare('SELECT COUNT(*) FROM chat_messages WHERE id>? AND (user_id IS NULL OR user_id<>?)');$unreadStmt->execute([$lastRead,$user['id']]);
-        $json(['messages'=>$messages,'unread'=>(int)$unreadStmt->fetchColumn()]);
+        $user=$chatAuth();$db=Database::connection();$after=max(0,(int)($_GET['after']??0));$peer=max(0,(int)($_GET['peer']??0));if($peer===(int)$user['id'])$peer=0;
+        $presence=$db->prepare('INSERT INTO chat_presence(user_id,last_seen_at) VALUES (?,NOW()) ON DUPLICATE KEY UPDATE last_seen_at=NOW()');$presence->execute([$user['id']]);
+        if($peer){$visible='((user_id=? AND recipient_user_id=?) OR (user_id=? AND recipient_user_id=?))';$params=[$user['id'],$peer,$peer,$user['id']];}else{$visible='recipient_user_id IS NULL';$params=[];}
+        if($after>0){$stmt=$db->prepare("SELECT id,user_id,recipient_user_id,sender_name,sender_role,body,created_at FROM chat_messages WHERE $visible AND id>? ORDER BY id ASC LIMIT 100");$stmt->execute(array_merge($params,[$after]));$messages=$stmt->fetchAll();}
+        else{$stmt=$db->prepare("SELECT id,user_id,recipient_user_id,sender_name,sender_role,body,created_at FROM chat_messages WHERE $visible ORDER BY id DESC LIMIT 50");$stmt->execute($params);$messages=array_reverse($stmt->fetchAll());}
+        $readStmt=$db->prepare('SELECT peer_user_id,last_read_message_id FROM chat_conversation_reads WHERE user_id=?');$readStmt->execute([$user['id']]);$reads=array_column($readStmt->fetchAll(),'last_read_message_id','peer_user_id');
+        $incoming=$db->prepare('SELECT id,user_id,recipient_user_id FROM chat_messages WHERE (recipient_user_id IS NULL AND (user_id IS NULL OR user_id<>?)) OR recipient_user_id=? ORDER BY id DESC LIMIT 1000');$incoming->execute([$user['id'],$user['id']]);$unreadBy=[];foreach($incoming->fetchAll() as $item){$key=$item['recipient_user_id']===null?0:(int)$item['user_id'];if((int)$item['id']>(int)($reads[$key]??0))$unreadBy[$key]=($unreadBy[$key]??0)+1;}$unread=array_sum($unreadBy);
+        $usersStmt=$db->prepare('SELECT u.id,u.name,u.role,p.last_seen_at FROM users u LEFT JOIN chat_presence p ON p.user_id=u.id WHERE u.active=1 AND u.id<>? ORDER BY u.role,u.name');$usersStmt->execute([$user['id']]);$users=$usersStmt->fetchAll();$cutoff=time()-45;foreach($users as &$chatUser)$chatUser['online']=$chatUser['last_seen_at']!==null&&strtotime((string)$chatUser['last_seen_at'])>=$cutoff;unset($chatUser);
+        $json(['messages'=>$messages,'users'=>$users,'peer'=>$peer,'unread'=>$unread,'unread_by_conversation'=>$unreadBy]);
     }
     if ($path === '/api/chat/messages' && $method === 'POST') {
-        $user=$chatAuth();$data=$input();$csrf($data);$body=trim((string)($data['body']??''));
+        $user=$chatAuth();$data=$input();$csrf($data);$body=trim((string)($data['body']??''));$recipient=max(0,(int)($data['recipient_user_id']??0));if($recipient===(int)$user['id'])$json(['error'=>'Tidak dapat mengirim pesan langsung kepada diri sendiri.'],422);
         if($body===''||mb_strlen($body)>1000)$json(['error'=>'Pesan wajib diisi dan maksimal 1000 karakter.'],422);
         $now=microtime(true);$previous=(float)($_SESSION['chat_last_sent_at']??0);if($now-$previous<0.7)$json(['error'=>'Tunggu sebentar sebelum mengirim pesan berikutnya.'],429);$_SESSION['chat_last_sent_at']=$now;
-        $db=Database::connection();$stmt=$db->prepare('INSERT INTO chat_messages(user_id,sender_name,sender_role,body) VALUES (?,?,?,?)');$stmt->execute([$user['id'],$user['name'],$user['role'],$body]);$id=(int)$db->lastInsertId();
-        $messageStmt=$db->prepare('SELECT id,user_id,sender_name,sender_role,body,created_at FROM chat_messages WHERE id=?');$messageStmt->execute([$id]);$json(['message'=>$messageStmt->fetch()],201);
+        $db=Database::connection();if($recipient){$recipientStmt=$db->prepare('SELECT COUNT(*) FROM users WHERE id=? AND active=1');$recipientStmt->execute([$recipient]);if(!(int)$recipientStmt->fetchColumn())$json(['error'=>'Penerima tidak ditemukan atau tidak aktif.'],422);}
+        $stmt=$db->prepare('INSERT INTO chat_messages(user_id,recipient_user_id,sender_name,sender_role,body) VALUES (?,?,?,?,?)');$stmt->execute([$user['id'],$recipient?:null,$user['name'],$user['role'],$body]);$id=(int)$db->lastInsertId();
+        $messageStmt=$db->prepare('SELECT id,user_id,recipient_user_id,sender_name,sender_role,body,created_at FROM chat_messages WHERE id=?');$messageStmt->execute([$id]);$json(['message'=>$messageStmt->fetch()],201);
     }
     if ($path === '/api/chat/read' && $method === 'POST') {
-        $user=$chatAuth();$data=$input();$csrf($data);$requested=max(0,(int)($data['last_id']??0));$db=Database::connection();$latest=(int)($db->query('SELECT COALESCE(MAX(id),0) FROM chat_messages')->fetchColumn()?:0);$lastId=min($requested,$latest);
-        $stmt=$db->prepare('INSERT INTO chat_reads(user_id,last_read_message_id) VALUES (?,?) ON DUPLICATE KEY UPDATE last_read_message_id=VALUES(last_read_message_id),updated_at=NOW()');$stmt->execute([$user['id'],$lastId]);$json(['read_to'=>$lastId]);
+        $user=$chatAuth();$data=$input();$csrf($data);$requested=max(0,(int)($data['last_id']??0));$peer=max(0,(int)($data['peer_user_id']??0));$db=Database::connection();$latest=(int)($db->query('SELECT COALESCE(MAX(id),0) FROM chat_messages')->fetchColumn()?:0);$lastId=min($requested,$latest);
+        $stmt=$db->prepare('INSERT INTO chat_conversation_reads(user_id,peer_user_id,last_read_message_id) VALUES (?,?,?) ON DUPLICATE KEY UPDATE last_read_message_id=VALUES(last_read_message_id),updated_at=NOW()');$stmt->execute([$user['id'],$peer,$lastId]);$json(['read_to'=>$lastId,'peer'=>$peer]);
     }
     $downloadFiles=['/downloads/RekaQueueServerSetup.exe'=>'RekaQueueServerSetup.exe','/downloads/reka-queue-windows-startup.zip'=>'reka-queue-windows-startup.zip','/downloads/reka-display-startup.zip'=>'reka-display-startup.zip','/downloads/reka-kiosk-printer.zip'=>'reka-kiosk-printer.zip','/downloads/reka-operator-client.zip'=>'reka-operator-client.zip','/downloads/RekaQueueNotifierSetup.exe'=>'RekaQueueNotifierSetup.exe','/downloads/RekaQueueNotifier.apk'=>'RekaQueueNotifier.apk','/downloads/reka-queue-notifier-linux.deb'=>'reka-queue-notifier-linux.deb','/downloads/reka-windows-notifier.zip'=>'reka-windows-notifier.zip','/downloads/reka-display-client.zip'=>'reka-display-client.zip','/downloads/reka-queue-online-wordpress.zip'=>'reka-queue-online-wordpress.zip'];
     if (isset($downloadFiles[$path]) && in_array($method, ['GET','HEAD'], true)) {
