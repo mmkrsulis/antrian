@@ -3,8 +3,14 @@ declare(strict_types=1);
 require dirname(__DIR__) . '/bootstrap/app.php';
 use App\Core\Database;
 
+if(PHP_SAPI==='cli'){ini_set('display_errors','1');error_reporting(E_ALL);}
+
 $db=Database::connection();
 $migrationDir=$db->isSqlite()?dirname(__DIR__).'/database/sqlite':dirname(__DIR__).'/database/migrations';
+if($db->isSqlite()){
+    $columns=$db->query('PRAGMA table_info(chat_messages)')->fetchAll();
+    if($columns&&!in_array('recipient_user_id',array_column($columns,'name'),true))$db->exec('ALTER TABLE chat_messages ADD COLUMN recipient_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL');
+}
 foreach (glob($migrationDir.'/*.sql') as $file) $db->exec(file_get_contents($file));
 foreach (glob(dirname(__DIR__).'/database/seeds/*.sql') as $file) $db->exec(file_get_contents($file));
 $password=(string)(getenv('LIVE_ADMIN_PASSWORD')?:'');

@@ -10,7 +10,7 @@ CRCCheck on
 !include "WinMessages.nsh"
 
 !define PRODUCT_NAME "Reka Queue Server"
-!define PRODUCT_VERSION "2.1.2"
+!define PRODUCT_VERSION "2.1.3"
 !define COMPANY_NAME "rekakarsa"
 !define UNINSTALL_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\RekaQueueServer"
 !define REPO_ROOT "..\..\.."
