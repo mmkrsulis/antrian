@@ -10,7 +10,7 @@ CRCCheck on
 !include "WinMessages.nsh"
 
 !define PRODUCT_NAME "Reka Queue Server"
-!define PRODUCT_VERSION "2.1.1"
+!define PRODUCT_VERSION "2.1.2"
 !define COMPANY_NAME "rekakarsa"
 !define UNINSTALL_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\RekaQueueServer"
 !define REPO_ROOT "..\..\.."
@@ -171,6 +171,7 @@ Section "Reka Queue Server" SecMain
     FileWrite $0 "ADMIN_NAME=$AdminName$\r$\n"
     FileWrite $0 "ADMIN_USERNAME=$AdminUsername$\r$\n"
     FileWrite $0 "ADMIN_PASSWORD=$AdminPassword$\r$\n"
+    FileWrite $0 "APP_VERSION=${PRODUCT_VERSION}$\r$\n"
     FileClose $0
 
     DetailPrint "Installing the bundled web and database runtime..."

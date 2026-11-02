@@ -41,6 +41,18 @@ docker compose --env-file .env.live up -d --build
 docker compose --env-file .env.live exec -T web php /var/www/html/bin/install-live.php
 ```
 
+Untuk pembaruan production berikutnya, gunakan satu jalur deployment berversi:
+
+```bash
+APP_VERSION=2.1.2 ./bin/deploy.sh
+```
+
+Script membangun image immutable dengan versi, commit, dan waktu build; mengganti
+container web; menjalankan migration; lalu memastikan `/health` melaporkan commit
+yang baru. Source aplikasi tidak di-mount ke container. Hanya data runtime pada
+`storage` dan `public/uploads` yang tetap di-mount agar bertahan saat upgrade.
+Deployment dari worktree yang belum bersih ditolak secara default.
+
 Buka `http://server-address:8090` dari perangkat yang diizinkan. Gunakan firewall atau Tailscale ACL agar port hanya dapat diakses dari jaringan yang diperlukan.
 
 Untuk memakai nama lokal `http://antrian.test:8090`, tambahkan baris berikut ke hosts komputer yang membuka aplikasi:

@@ -2,14 +2,25 @@ name: queue-management-live
 
 services:
   web:
-    build: .
+    image: reka-queue:${APP_VERSION:-dev}
+    build:
+      context: .
+      args:
+        APP_VERSION: ${APP_VERSION:-dev}
+        APP_COMMIT: ${APP_COMMIT:-unknown}
+        APP_BUILT_AT: ${APP_BUILT_AT:-unknown}
     restart: unless-stopped
     ports:
       - "${QUEUE_BIND_IP:?Set QUEUE_BIND_IP in your private environment}:${QUEUE_PORT:-8090}:80"
       - "${QUEUE_LAN_IP:?Set QUEUE_LAN_IP in your private environment}:${QUEUE_PORT:-8090}:80"
     env_file: .env.live
+    environment:
+      APP_VERSION: ${APP_VERSION:-dev}
+      APP_COMMIT: ${APP_COMMIT:-unknown}
+      APP_BUILT_AT: ${APP_BUILT_AT:-unknown}
     volumes:
-      - .:/var/www/html
+      - ./storage:/var/www/html/storage
+      - ./public/uploads:/var/www/html/public/uploads
     depends_on:
       db:
         condition: service_healthy

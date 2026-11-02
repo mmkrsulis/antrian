@@ -5,4 +5,7 @@ storage/logs
 storage/sessions
 public/uploads
 deployment/*.zip
+deployment/windows-server
+deployment/android/notifier/build
+deployment/windows/notifier/*.o
 release

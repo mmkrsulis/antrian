@@ -45,6 +45,7 @@ $port=[int]$options.SERVER_PORT
 $adminName=$options.ADMIN_NAME
 $adminUsername=$options.ADMIN_USERNAME
 $adminPassword=$options.ADMIN_PASSWORD
+$appVersion=$options.APP_VERSION
 $serverIp=$options.SERVER_IP
 if(!$installDir -or $port -lt 1 -or $port -gt 65535){throw 'Invalid installation options.'}
 if($adminUsername -notmatch '^[a-zA-Z0-9._-]{3,50}$'){throw 'Administrator username must be 3-50 letters, numbers, dots, dashes, or underscores.'}
@@ -114,6 +115,9 @@ APP_ENV=production
 APP_DEBUG=false
 APP_URL=$appUrl
 APP_TIMEZONE=Asia/Jakarta
+APP_VERSION=$appVersion
+APP_COMMIT=windows-release
+APP_BUILT_AT=$(Get-Date -Format o)
 DB_CONNECTION=sqlite
 DB_DATABASE=$databaseFile
 SESSION_SECURE=false
@@ -125,6 +129,10 @@ ONLINE_API_KEY=$onlineKey
     if(!(Test-Path $envStore)){throw 'Existing database configuration is missing. Installation stopped to protect data.'}
     $existingEnv=[IO.File]::ReadAllText($envStore)
     $existingEnv=[Text.RegularExpressions.Regex]::Replace($existingEnv,'(?m)^APP_URL=.*$',"APP_URL=$appUrl")
+    foreach($releaseValue in @{'APP_VERSION'=$appVersion;'APP_COMMIT'='windows-release';'APP_BUILT_AT'=(Get-Date -Format o)}.GetEnumerator()){
+        if($existingEnv -match "(?m)^$($releaseValue.Key)="){$existingEnv=[Text.RegularExpressions.Regex]::Replace($existingEnv,"(?m)^$($releaseValue.Key)=.*$","$($releaseValue.Key)=$($releaseValue.Value)")}
+        else{$existingEnv+="`r`n$($releaseValue.Key)=$($releaseValue.Value)"}
+    }
     [IO.File]::WriteAllText($envStore,$existingEnv,[Text.UTF8Encoding]::new($false))
 }
 Copy-Item $envStore (Join-Path $appDir '.env') -Force
@@ -144,6 +152,7 @@ extension=mbstring
 extension=openssl
 extension=pdo_sqlite
 extension=sqlite3
+extension=zip
 upload_max_filesize=512M
 post_max_size=520M
 max_execution_time=300

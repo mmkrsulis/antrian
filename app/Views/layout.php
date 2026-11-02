@@ -2,6 +2,7 @@
 $currentPath=parse_url($_SERVER['REQUEST_URI']??'/',PHP_URL_PATH)?:'/';
 $layoutUser=\App\Core\Auth::user();
 $isAdmin=$layoutUser&&in_array($layoutUser['role'],['super_admin','admin'],true);
+$isSuperAdmin=$layoutUser&&$layoutUser['role']==='super_admin';
 $active=static fn(string $path): string => $currentPath===$path?' active':'';
 ?>
 <!doctype html><html lang="id" translate="no" class="notranslate"><head><meta charset="utf-8"><meta name="google" content="notranslate"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?=e(app_name())?></title><link rel="stylesheet" href="/assets/app.css?v=<?=e((string)filemtime(__DIR__.'/../../public/assets/app.css'))?>"><link rel="stylesheet" href="/assets/creator-credit.css?v=<?=e((string)filemtime(__DIR__.'/../../public/assets/creator-credit.css'))?>"><link rel="stylesheet" href="/assets/admin-shell.css?v=<?=e((string)filemtime(__DIR__.'/../../public/assets/admin-shell.css'))?>"><?php if($layoutUser):?><link rel="stylesheet" href="/assets/chat.css?v=<?=e((string)filemtime(__DIR__.'/../../public/assets/chat.css'))?>"><?php endif?><style><?=theme_css_vars()?></style></head><body class="admin-shell">
@@ -25,6 +26,7 @@ $active=static fn(string $path): string => $currentPath===$path?' active':'';
             <a class="<?=$active('/admin/users')?>" href="/admin/users"><span>♙</span>Pengguna</a>
             <p>SISTEM</p>
             <a class="<?=$active('/admin/settings')?>" href="/admin/settings"><span>⚙</span>Pengaturan</a>
+            <?php if($isSuperAdmin):?><a class="<?=$active('/admin/backup')?>" href="/admin/backup"><span>↕</span>Backup &amp; Restore</a><?php endif?>
             <a class="<?=$active('/reports')?>" href="/reports"><span>▤</span>Laporan</a>
             <a class="<?=$active('/admin/downloads')?>" href="/admin/downloads"><span>⇩</span>Aplikasi Client</a>
             <?php endif?>

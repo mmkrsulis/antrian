@@ -62,6 +62,17 @@ function setting(string $key, mixed $default = null): mixed {
 }
 
 function app_name(): string { return (string) setting('app_name', env('APP_NAME','Reka Queue Management')); }
+function app_version(): string { return (string) env('APP_VERSION','dev'); }
+function app_commit(): string { return (string) env('APP_COMMIT','unknown'); }
+function app_built_at(): string { return (string) env('APP_BUILT_AT','unknown'); }
+function app_release_label(): string {
+    $commit=app_commit();
+    return 'v'.app_version().($commit!==''&&$commit!=='unknown'?' · '.substr($commit,0,7):'');
+}
+function asset_version(string $relativePath): string {
+    $path=dirname(__DIR__).'/public/'.ltrim($relativePath,'/');
+    return is_file($path)?substr(hash_file('sha256',$path),0,16):'missing';
+}
 function app_timezone(): string {
     $timezone=(string)setting('app_timezone',env('APP_TIMEZONE','Asia/Jakarta'));
     return in_array($timezone,['Asia/Jakarta','Asia/Makassar','Asia/Jayapura','UTC'],true)?$timezone:'Asia/Jakarta';

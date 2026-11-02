@@ -9,6 +9,7 @@ use App\Core\View;
 use App\Services\QueueService;
 use App\Services\OnlineRegistrationService;
 use App\Services\TicketPdf;
+use App\Services\BackupService;
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
@@ -55,7 +56,11 @@ $configuredClientArchive=static function(string $source,string $serverUrl): stri
 };
 
 try {
-    if ($path === '/health') { try { Database::connection()->query('SELECT 1'); $json(['status'=>'ok']); } catch (Throwable) { $json(['status'=>'starting'],503); } }
+    if ($path === '/health') {
+        $release=['version'=>app_version(),'commit'=>app_commit(),'built_at'=>app_built_at()];
+        try { Database::connection()->query('SELECT 1'); $json(['status'=>'ok']+$release); }
+        catch (Throwable) { $json(['status'=>'starting']+$release,503); }
+    }
     if ($path === '/api/chat/messages' && $method === 'GET') {
         $user=$chatAuth();$db=Database::connection();$after=max(0,(int)($_GET['after']??0));$peer=max(0,(int)($_GET['peer']??0));if($peer===(int)$user['id'])$peer=0;
         $presence=$db->prepare('INSERT INTO chat_presence(user_id,last_seen_at) VALUES (?,NOW()) ON DUPLICATE KEY UPDATE last_seen_at=NOW()');$presence->execute([$user['id']]);
@@ -362,6 +367,22 @@ try {
         $rows=$db->query("SELECT `key`,`value` FROM settings WHERE `key` IN ('app_name','header_mode','header_title','header_subtitle','header_image_url','header_height_mode','header_height_px','primary_color','secondary_color','accent_color','footer_text','ticket_header','ticket_footer','display_media_type','display_media_url','display_media_muted')")->fetchAll();$branding=array_column($rows,'value','key');$playlistFiles=[];foreach(glob(dirname(__DIR__).'/public/uploads/media/playlist/*.{mp4,webm,ogv}',GLOB_BRACE)?:[] as $file)$playlistFiles[]=basename($file);sort($playlistFiles);View::render('settings',compact('branding','playlistFiles'));exit;
     }
     if ($path === '/admin/downloads') { Auth::require(['super_admin','admin']);View::render('downloads');exit; }
+    if ($path === '/admin/backup') { Auth::require(['super_admin']);View::render('backup');exit; }
+    if ($path === '/admin/backup/export' && $method === 'POST') {
+        $user=Auth::require(['super_admin']);$csrf($_POST);$file=BackupService::export();
+        Audit::log('backup.exported','system',null,['version'=>app_version()]);
+        $name='reka-queue-backup-'.date('Ymd-His').'.zip';
+        header('Content-Type: application/zip');header('Content-Disposition: attachment; filename="'.$name.'"');header('Content-Length: '.filesize($file));header('Cache-Control: no-store');
+        readfile($file);@unlink($file);exit;
+    }
+    if ($path === '/admin/backup/import' && $method === 'POST') {
+        Auth::require(['super_admin']);$csrf($_POST);
+        if(!isset($_FILES['backup'])||($_FILES['backup']['error']??UPLOAD_ERR_NO_FILE)!==UPLOAD_ERR_OK)throw new RuntimeException('Upload file backup gagal.');
+        BackupService::restore((string)$_FILES['backup']['tmp_name']);
+        unset($_SESSION['user_id']);session_regenerate_id(true);
+        Audit::log('backup.restored','system',null,['source_name'=>basename((string)$_FILES['backup']['name'])]);
+        $redirect('/login?restored=1');
+    }
     if ($path === '/admin/registrations') {
         Auth::require(['super_admin','admin']);$db=Database::connection();$date=(string)($_GET['date']??date('Y-m-d'));if(!preg_match('/^\d{4}-\d{2}-\d{2}$/',$date))$date=date('Y-m-d');$status=(string)($_GET['status']??'');$allowed=['registered','checked_in','cancelled','expired'];$sql="SELECT r.*,s.name service_name,t.ticket_number FROM online_registrations r JOIN services s ON s.id=r.service_id LEFT JOIN tickets t ON t.id=r.ticket_id WHERE r.visit_date=?";$params=[$date];if(in_array($status,$allowed,true)){$sql.=' AND r.status=?';$params[]=$status;}$sql.=' ORDER BY r.created_at DESC LIMIT 500';$stmt=$db->prepare($sql);$stmt->execute($params);$registrations=$stmt->fetchAll();View::render('registrations',compact('registrations','date','status'));exit;
     }

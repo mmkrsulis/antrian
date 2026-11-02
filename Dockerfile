@@ -11,6 +11,11 @@ RUN apt-get update \
 
 RUN printf 'upload_max_filesize=512M\npost_max_size=520M\nmax_execution_time=300\n' > /usr/local/etc/php/conf.d/queue-uploads.ini
 
+ARG APP_VERSION=dev
+ARG APP_COMMIT=unknown
+ARG APP_BUILT_AT=unknown
+ENV APP_VERSION=${APP_VERSION} APP_COMMIT=${APP_COMMIT} APP_BUILT_AT=${APP_BUILT_AT}
+
 COPY . /var/www/html
 RUN mkdir -p storage/logs storage/sessions \
     && chown -R www-data:www-data storage
