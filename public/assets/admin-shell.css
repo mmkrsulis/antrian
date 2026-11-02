@@ -23,6 +23,7 @@
 .admin-shell .crud-table-wrap{scrollbar-width:thin;scrollbar-color:#9eb2c8 transparent}
 .admin-shell table tbody tr{transition:background-color .15s ease}.admin-shell table tbody tr:hover{background:#f3f7fb}.admin-shell table th{color:#4b6077}.admin-shell table td{vertical-align:middle}
 .admin-shell input,.admin-shell select,.admin-shell textarea{width:100%;min-height:44px;background:#fff;transition:border-color .15s ease,box-shadow .15s ease}
+.admin-shell input[type=checkbox],.admin-shell input[type=radio]{flex:0 0 auto;width:1.15rem;height:1.15rem;min-height:0;margin:0;padding:0;accent-color:var(--brand-secondary,#1478c8)}
 .admin-shell input:hover,.admin-shell select:hover,.admin-shell textarea:hover{border-color:#91a8bf}
 .admin-shell input:focus,.admin-shell select:focus,.admin-shell textarea:focus{outline:0;border-color:var(--brand-secondary,#1478c8);box-shadow:0 0 0 3px rgba(20,120,200,.16)}
 .admin-shell button,.admin-shell .button{min-height:42px;transition:transform .15s ease,filter .15s ease,box-shadow .15s ease}
