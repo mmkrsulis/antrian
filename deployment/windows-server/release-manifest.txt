@@ -1,7 +1,7 @@
-Reka Queue Server Setup 2.1.4
+Reka Queue Server Setup 2.1.5
 Filename: RekaQueueServerSetup.exe
 Size: 102699142 bytes
-SHA-256: 5b56c16aa01345f796df915d826c07f530cede807b653a02ce6329ac1f3e3032
+SHA-256: 7a39b8286fe2408855bb518b1cd4adc4434f8f17d457ad5d0247213764dc9cca
 
 XAMPP-free bundled runtime sources:
 - PHP 8.4.24 NTS Windows x64 (official PHP for Windows)
