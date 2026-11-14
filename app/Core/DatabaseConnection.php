@@ -12,6 +12,7 @@ use PDOStatement;
 final class DatabaseConnection extends PDO
 {
     private bool $sqlite;
+    private bool $sqliteInTransaction = false;
 
     public function __construct(string $dsn, ?string $username = null, ?string $password = null, array $options = [])
     {
@@ -40,7 +41,31 @@ final class DatabaseConnection extends PDO
     public function beginTransaction(): bool
     {
         if (!$this->sqlite) return parent::beginTransaction();
-        return parent::exec('BEGIN IMMEDIATE') !== false;
+        $ok = parent::exec('BEGIN IMMEDIATE') !== false;
+        if ($ok) $this->sqliteInTransaction = true;
+        return $ok;
+    }
+
+    public function commit(): bool
+    {
+        if (!$this->sqlite) return parent::commit();
+        $ok = parent::exec('COMMIT') !== false;
+        $this->sqliteInTransaction = false;
+        return $ok;
+    }
+
+    public function rollBack(): bool
+    {
+        if (!$this->sqlite) return parent::rollBack();
+        $ok = parent::exec('ROLLBACK') !== false;
+        $this->sqliteInTransaction = false;
+        return $ok;
+    }
+
+    public function inTransaction(): bool
+    {
+        if (!$this->sqlite) return parent::inTransaction();
+        return $this->sqliteInTransaction;
     }
 
     public function isSqlite(): bool { return $this->sqlite; }

@@ -39,10 +39,11 @@ final class QueueService
             $db->prepare('UPDATE daily_sequences SET last_number = ? WHERE service_id = ? AND queue_date = ?')->execute([$next, $serviceId, $date]);
             $number = strtoupper($service['code']) . '-' . str_pad((string) $next, 3, '0', STR_PAD_LEFT);
             $publicId = $this->uuid();
-            $db->prepare('INSERT INTO tickets(public_id, service_id, sub_service_id, sub_service_name, queue_date, sequence_number, ticket_number) VALUES (?, ?, ?, ?, ?, ?, ?)')
-                ->execute([$publicId, $serviceId, $subService['id'] ?? null, $subService['name'] ?? null, $date, $next, $number]);
+            $now = date('Y-m-d H:i:s');
+            $db->prepare('INSERT INTO tickets(public_id, service_id, sub_service_id, sub_service_name, queue_date, sequence_number, ticket_number, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
+                ->execute([$publicId, $serviceId, $subService['id'] ?? null, $subService['name'] ?? null, $date, $next, $number, $now, $now]);
             $id = (int) $db->lastInsertId();
-            $db->prepare("INSERT INTO queue_events(ticket_id, event_type, payload) VALUES (?, 'issued', ?)")->execute([$id, json_encode(['ticket_number' => $number, 'sub_service_name' => $subService['name'] ?? null])]);
+            $db->prepare("INSERT INTO queue_events(ticket_id, event_type, payload, created_at) VALUES (?, 'issued', ?, ?)")->execute([$id, json_encode(['ticket_number' => $number, 'sub_service_name' => $subService['name'] ?? null]), $now]);
             $db->commit();
             Audit::log('ticket.issued', 'ticket', $id, ['ticket_number' => $number, 'sub_service_name' => $subService['name'] ?? null]);
             return $this->ticket($publicId);
