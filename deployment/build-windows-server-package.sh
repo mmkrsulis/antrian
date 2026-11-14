@@ -14,11 +14,16 @@ winsw_name="WinSW-x64.exe"
 winsw_url="https://github.com/winsw/winsw/releases/download/v2.12.0/$winsw_name"
 winsw_sha256="05b82d46ad331cc16bdc00de5c6332c1ef818df8ceefcd49c726553209b3a0da"
 vc_runtime="$repo_dir/deployment/windows-server/runtime/vc_redist.x64.exe"
-vc_runtime_sha256="843068991daaa1f73ad9f6239bce4d0f6a07a51f18c37ea2a867e9beca71295c"
+vc_runtime_sha256="9c02c9ed120f671b900e6b9471d890e3b2414117a7e53f4ae2e855466fa2b7c9"
 
 download_and_verify() {
   local url=$1 target=$2 checksum=$3
-  if [[ ! -f "$target" ]]; then curl -fL --retry 3 --retry-delay 3 "$url" -o "$target"; fi
+  if [[ ! -f "$target" ]]; then
+    if ! curl -fL --retry 3 --retry-delay 3 "$url" -o "$target"; then
+      local archive_url="${url/downloads\/releases\//downloads\/releases\/archives\/}"
+      curl -fL --retry 3 --retry-delay 3 "$archive_url" -o "$target"
+    fi
+  fi
   echo "$checksum  $target" | sha256sum -c -
 }
 download_and_verify "$php_url" "$runtime_dir/$php_name" "$php_sha256"
@@ -38,7 +43,7 @@ chmod 644 "$installer" "$repo_dir/deployment/RekaQueueServerSetup.exe"
 installer_size=$(stat -c %s "$installer")
 installer_sha256=$(sha256sum "$installer"|awk '{print $1}')
 cat > "$repo_dir/deployment/windows-server/release-manifest.txt" <<EOF
-Reka Queue Server Setup 2.1.3
+Reka Queue Server Setup 2.1.4
 Filename: RekaQueueServerSetup.exe
 Size: $installer_size bytes
 SHA-256: $installer_sha256
